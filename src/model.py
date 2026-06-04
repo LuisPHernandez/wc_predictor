@@ -15,7 +15,7 @@ class DixonColes:
     points under the pool's scoring rules.
     """
 
-    def __init__(self, df, decay_lambda=0.2, regularization=0.001):
+    def __init__(self, df, decay_lambda=0.2, regularization=0.0001):
         """
         Parameters
         ----------

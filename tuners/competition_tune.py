@@ -3,17 +3,28 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
+import sys
 import time
-import pandas as pd
-import numpy as np # pyrefly: ignore [missing-import]
 import itertools
+import pandas as pd
+import numpy as np
+from pathlib import Path
 from multiprocessing import Pool as ProcessPool
-from src.loader import load_kaggle_data, load_pool_data, get_wc_teams
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.loader import load_pool_data, get_wc_teams, build_competition_weights, load_kaggle_base_data
 from src.model import DixonColes
 from src.scoring import points_for_prediction
 
-KAGGLE_PATH = 'data/kaggle/results.csv'
-POOL_PATH   = 'data/pool'
+KAGGLE_PATH = PROJECT_ROOT / 'data' / 'kaggle' / 'results.csv'
+POOL_PATH   = PROJECT_ROOT / 'data' / 'pool'
+RESULTS_PATH = PROJECT_ROOT / 'tuners' / 'results' / 'competition_tune_results_v2.csv'
+POOL_CACHE = None
+MEAN_USER_CACHE = None
+BASE_KAGGLE_CACHE = None
 
 WC_START_DATES = {
     2002: '2002-05-31',
@@ -27,11 +38,17 @@ WC_START_DATES = {
 # Years with pool predictions to score against
 TUNING_YEARS = [2002, 2006, 2010, 2018, 2022]
 
-# Hyperparameter search space
+# Best hyperparameters found with hyperparameter_tune.py
+DECAY_LAMBDA   = 0.2
+TRAINING_YEARS = 12
+REGULARIZATION = 0.0001
+
+# Competition weights' search space
 SEARCH_SPACE = {
-    'decay_lambda':   [0.1, 0.15, 0.2, 0.25, 0.3],
-    'training_years': [6, 8, 10, 12, 14, 16],
-    'regularization': [0.0001, 0.001, 0.01],
+    "continental": [0.8, 0.9, 1.0],
+    "qualifier":   [0.5, 0.7, 1.0],
+    "regional":    [0.3, 0.5, 1.0],
+    "friendly":    [0.0, 0.1, 0.3, 1.0],
 }
 
 def get_training_window(wc_year, training_years):
@@ -70,8 +87,7 @@ def compute_mean_user_points(year):
 
     return total_pts / n_users
 
-def run_single_year(year, decay_lambda, training_years, regularization,
-                    pool_cache, mean_user_cache):
+def run_single_year(year, continental, qualifier, regional, friendly, pool_cache, mean_user_cache):
     """
     Fits the model and scores it for a single WC year.
     Returns the model's margin over the mean user.
@@ -81,18 +97,43 @@ def run_single_year(year, decay_lambda, training_years, regularization,
     """
     t0 = time.time()
     
-    pool     = pool_cache[year]
-    wc_teams = get_wc_teams(pool)
+    pool = pool_cache[year]
 
-    start_date, end_date = get_training_window(year, training_years)
-
-    kaggle_df = load_kaggle_data(
-        KAGGLE_PATH, wc_teams, start_date, end_date, decay_lambda
+    competition_weights = build_competition_weights(
+        continental,
+        qualifier,
+        regional,
+        friendly
     )
 
-    model = DixonColes(kaggle_df, decay_lambda=decay_lambda,
-                       regularization=regularization)
+    kaggle_df = BASE_KAGGLE_CACHE[year].copy()
+
+    kaggle_df['competition_weight'] = (
+        kaggle_df['tournament']
+        .map(competition_weights)
+    )
+
+    kaggle_df['weight'] = (
+        kaggle_df['competition_weight']
+        * kaggle_df['recency_weight']
+    )
+
+    kaggle_df = kaggle_df[
+        [
+            'date',
+            'home_team',
+            'away_team',
+            'home_score',
+            'away_score',
+            'neutral',
+            'weight'
+        ]
+    ]
+
+    model = DixonColes(kaggle_df, decay_lambda=DECAY_LAMBDA,
+                       regularization=REGULARIZATION)
     model.fit()
+    print(f"Model fitted for {year}")
 
     # Score model predictions against actual results
     games  = pool['games']
@@ -114,21 +155,65 @@ def run_single_year(year, decay_lambda, training_years, regularization,
     elapsed  = time.time() - t0
     return model_points, margin, elapsed
 
+def init_worker():
+    """
+    Runs once when each worker process starts.
+    Preloads data that never changes between combinations.
+    """
+    global POOL_CACHE
+    global MEAN_USER_CACHE
+    global BASE_KAGGLE_CACHE
+
+    POOL_CACHE = {
+        year: load_pool_data(POOL_PATH, year)
+        for year in TUNING_YEARS
+    }
+
+    MEAN_USER_CACHE = {
+        year: compute_mean_user_points(year)
+        for year in TUNING_YEARS
+    }
+
+    BASE_KAGGLE_CACHE = {}
+
+    for year in TUNING_YEARS:
+        pool = POOL_CACHE[year]
+        wc_teams = get_wc_teams(pool)
+
+        start_date, end_date = get_training_window(
+            year,
+            TRAINING_YEARS
+        )
+
+        BASE_KAGGLE_CACHE[year] = load_kaggle_base_data(
+            KAGGLE_PATH,
+            wc_teams,
+            start_date,
+            end_date,
+            DECAY_LAMBDA
+        )
+
+    print(
+        f"Worker initialized "
+        f"(pid={os.getpid()})"
+    )
+
 def run_combo(args):
-    decay, train_years, reg = args
+    continental, qualifier, regional, friendly = args
 
     year_margins = {}
     year_points  = {}
     year_times   = {}
 
-    # Each worker loads its own data independently
-    pool_cache      = {year: load_pool_data(POOL_PATH, year) for year in TUNING_YEARS}
-    mean_user_cache = {year: compute_mean_user_points(year) for year in TUNING_YEARS}
-
     for year in TUNING_YEARS:
         pts, margin, elapsed = run_single_year(
-            year, decay, train_years, reg,
-            pool_cache, mean_user_cache
+            year,
+            continental, 
+            qualifier, 
+            regional, 
+            friendly,
+            POOL_CACHE, 
+            MEAN_USER_CACHE
         )
         year_margins[year] = margin
         year_points[year]  = pts
@@ -138,10 +223,11 @@ def run_combo(args):
     combo_time = sum(year_times.values())
 
     row = {
-        'decay_lambda':   decay,
-        'training_years': train_years,
-        'regularization': reg,
-        'avg_margin':     avg_margin,
+        "continental": continental,
+        "qualifier": qualifier,
+        "regional": regional,
+        "friendly": friendly,
+        "avg_margin": avg_margin,
         'combo_time_s':   round(combo_time, 1),
     }
     for year in TUNING_YEARS:
@@ -153,10 +239,10 @@ def run_combo(args):
 
 def run_tuning():
     """
-    Grid search over all hyperparameter combinations.
+    Grid search over all competition weight combinations.
     For each combination, fits the model on all tuning years and
     computes the average margin over mean user.
-    Saves results to hyperparameter_tune_results.csv as it goes.
+    Saves results to competition_tune_results.csv as it goes.
     """
     mean_user_cache  = {year: compute_mean_user_points(year) for year in TUNING_YEARS}
 
@@ -172,11 +258,12 @@ def run_tuning():
 
     # Load existing results if resuming
     try:
-        existing = pd.read_csv('hyperparameter_tune_results.csv')
+        existing = pd.read_csv(RESULTS_PATH)
         completed = set(
-            zip(existing['decay_lambda'],
-                existing['training_years'],
-                existing['regularization'])
+            zip(existing['continental'],
+                existing['qualifier'],
+                existing['regional'],
+                existing['friendly'])
         )
         results = existing.to_dict('records')
         print(f"Resuming... {len(completed)} combinations already done")
@@ -186,13 +273,15 @@ def run_tuning():
 
     # Filter to only remaining combos
     remaining = [
-        (dict(zip(keys, combo))['decay_lambda'],
-         dict(zip(keys, combo))['training_years'],
-         dict(zip(keys, combo))['regularization'])
+        (dict(zip(keys, combo))['continental'],
+         dict(zip(keys, combo))['qualifier'],
+         dict(zip(keys, combo))['regional'],
+         dict(zip(keys, combo))['friendly'])
         for combo in combos
-        if (dict(zip(keys, combo))['decay_lambda'],
-            dict(zip(keys, combo))['training_years'],
-            dict(zip(keys, combo))['regularization']) not in completed
+        if (dict(zip(keys, combo))['continental'],
+            dict(zip(keys, combo))['qualifier'],
+            dict(zip(keys, combo))['regional'],
+            dict(zip(keys, combo))['friendly']) not in completed
     ]
 
     print(f"\n{total - len(remaining)} done, {len(remaining)} remaining")
@@ -204,24 +293,25 @@ def run_tuning():
 
     # Build args list, pool_cache and mean_user_cache passed to each worker
     args_list = [
-        (decay, train_years, reg)
-        for decay, train_years, reg in remaining
+        (continental, qualifier, regional, friendly)
+        for continental, qualifier, regional, friendly in remaining
     ]
 
-    with ProcessPool(processes=n_workers) as p:
+    with ProcessPool(processes=n_workers, initializer=init_worker) as p:
         for i, row in enumerate(p.imap_unordered(run_combo, args_list)):
             results.append(row)
             print(f"[{len(results)}/{total}] "
-                  f"decay={row['decay_lambda']}, "
-                  f"training_years={row['training_years']}, "
-                  f"reg={row['regularization']} → "
+                  f"continental weight={row['continental']}, "
+                  f"qualifier weight={row['qualifier']}, "
+                  f"regional weight={row['regional']}, "
+                  f"friendly weight={row['friendly']} → "
                   f"avg_margin={row['avg_margin']:+.2f} "
                   f"({row['combo_time_s']:.0f}s)")
 
             # Save after every completed combo
             pd.DataFrame(results).sort_values(
                 'avg_margin', ascending=False
-            ).to_csv('hyperparameter_tune_results.csv', index=False)
+            ).to_csv(RESULTS_PATH, index=False)
 
     results_df = pd.DataFrame(results).sort_values('avg_margin', ascending=False)
 
@@ -229,14 +319,15 @@ def run_tuning():
     print("TOP 10 COMBINATIONS")
     print(f"{'='*70}")
     print(results_df.head(10)[[
-        'decay_lambda', 'training_years', 'regularization', 'avg_margin'
+        'continental', 'qualifier', 'regional', 'friendly', 'avg_margin'
     ]].to_string(index=False))
 
     best = results_df.iloc[0]
     print(f"\nBest combination:")
-    print(f"  decay_lambda:   {best['decay_lambda']}")
-    print(f"  training_years: {best['training_years']}")
-    print(f"  regularization: {best['regularization']}")
+    print(f"  continental weight:   {best['continental']}")
+    print(f"  qualifier weight: {best['qualifier']}")
+    print(f"  regional weight: {best['regional']}")
+    print(f"  friendly weight: {best['friendly']}")
     print(f"  avg_margin:     {best['avg_margin']:+.2f}")
 
     return results_df

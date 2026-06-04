@@ -1,10 +1,12 @@
 import pandas as pd
+from pathlib import Path
 from src.loader import load_kaggle_data, load_pool_data, get_wc_teams
 from src.model import DixonColes
 from src.scoring import points_for_prediction
 
-KAGGLE_PATH = 'data/kaggle/results.csv'
-POOL_PATH   = 'data/pool'
+PROJECT_ROOT = Path(__file__).resolve().parent
+KAGGLE_PATH = PROJECT_ROOT / 'data' / 'kaggle' / 'results.csv'
+POOL_PATH   = PROJECT_ROOT / 'data' / 'pool'
 
 # First game date per WC
 WC_START_DATES = {
@@ -16,7 +18,10 @@ WC_START_DATES = {
     2022: '2022-11-20',
 }
 
-TRAINING_YEARS = 8
+# Tuned hyperparameters
+TRAINING_YEARS = 12
+DECAY_LAMBDA = 0.2
+REGULARIZATION = 0.0001
 
 def get_training_window(wc_year):
     """
@@ -25,8 +30,7 @@ def get_training_window(wc_year):
     start_date = start of the year 8 years before end_date
     """
     end   = pd.Timestamp(WC_START_DATES[wc_year]) - pd.Timedelta(days=1)
-    start_year = end.year - TRAINING_YEARS
-    start = pd.Timestamp(year=start_year, month=1, day=1)
+    start = end - pd.DateOffset(years=TRAINING_YEARS)
     return start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d')
 
 
@@ -96,7 +100,7 @@ def score_model(model_preds_df, scores_df):
     return total
 
 
-def run_backtest(wc_year, decay_lambda=0.2, training_years=8):
+def run_backtest(wc_year, decay_lambda=DECAY_LAMBDA, training_years=TRAINING_YEARS):
     """
     Runs the full backtest for a single WC year.
 
@@ -129,7 +133,7 @@ def run_backtest(wc_year, decay_lambda=0.2, training_years=8):
     print(f"Training matches: {len(kaggle_df)}")
 
     # --- Fit model ---
-    model = DixonColes(kaggle_df, decay_lambda=decay_lambda)
+    model = DixonColes(kaggle_df, decay_lambda=decay_lambda, regularization=REGULARIZATION)
     model.fit()
 
     # --- Generate model predictions for every game ---
@@ -201,7 +205,7 @@ def run_backtest(wc_year, decay_lambda=0.2, training_years=8):
     }
 
 
-def run_all_backtests(years=None, decay_lambda=0.2):
+def run_all_backtests(years=None, decay_lambda=DECAY_LAMBDA):
     """
     Runs backtests for all available years and prints a summary table.
 

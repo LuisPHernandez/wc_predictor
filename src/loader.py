@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np # pyrefly: ignore [missing-import] 
 from src.mappings import code_to_name, FIFA_NAME_TO_CONFEDERATION
 
-# Competition weights
+# Default weights
 DEFAULT_COMPETITION_WEIGHTS = {
     'FIFA World Cup':                       1.0,
     'UEFA Euro':                            1.0,
@@ -24,8 +24,6 @@ DEFAULT_COMPETITION_WEIGHTS = {
     'CFU Caribbean Cup':                    0.3,
     'Friendly':                             0.3,
 }
-
-# Confederation weights
 DEFAULT_CONFEDERATION_WEIGHTS = {
     "CONMEBOL": 1.20,
     "UEFA":     1.15,
@@ -35,10 +33,11 @@ DEFAULT_CONFEDERATION_WEIGHTS = {
     "OFC":      0.95,
 }
 
+# Builders with tuned weights as their defaults
 def build_competition_weights(
-    continental=0.9,
-    qualifier=0.7,
-    regional=0.5,
+    continental=1.0,
+    qualifier=0.5,
+    regional=0.3,
     friendly=0.3
 ):
     """
@@ -73,11 +72,11 @@ def build_competition_weights(
     }
 
 def build_confederation_weights(
-    elite=1.15,
-    caf=1.05,
+    elite=1.0,
+    caf=1.10,
     concacaf=1.05,
-    afc=1.00,
-    ofc=0.95,
+    afc=0.95,
+    ofc=0.90,
 ):
     """
     Creates a full confederation->weight mapping from a small
@@ -115,10 +114,10 @@ def load_kaggle_data(path, wc_teams, start_date, end_date, decay_lambda=0.2, com
         neutral, weight
     """
     if competition_weights is None:
-        competition_weights = DEFAULT_COMPETITION_WEIGHTS
+        competition_weights = build_competition_weights()
 
     if confederation_weights is None:
-        confederation_weights = DEFAULT_CONFEDERATION_WEIGHTS
+        confederation_weights = build_confederation_weights()
 
     df = pd.read_csv(path)
     df['date'] = pd.to_datetime(df['date'])

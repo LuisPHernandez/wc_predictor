@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 
 from src.loader import (
     load_kaggle_base_data,
@@ -6,8 +7,9 @@ from src.loader import (
     get_wc_teams,
 )
 
-KAGGLE_PATH = "data/kaggle/results.csv"
-POOL_PATH   = "data/pool"
+PROJECT_ROOT = Path(__file__).resolve().parent
+KAGGLE_PATH = PROJECT_ROOT / "data" / "kaggle" / "results.csv"
+POOL_PATH   = PROJECT_ROOT / "data" / "pool"
 
 WC_START_DATES = {
     2002: "2002-05-31",

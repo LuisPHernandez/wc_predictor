@@ -3,20 +3,25 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
+import sys
 import time
-import itertools
 import pandas as pd
-import numpy as np
+import numpy as np # pyrefly: ignore [missing-import]
+import itertools
+from pathlib import Path
 from multiprocessing import Pool as ProcessPool
-from src.loader import load_pool_data, get_wc_teams, build_competition_weights, build_confederation_weights, load_kaggle_base_data
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.loader import load_kaggle_data, load_pool_data, get_wc_teams
 from src.model import DixonColes
 from src.scoring import points_for_prediction
 
-KAGGLE_PATH = 'data/kaggle/results.csv'
-POOL_PATH   = 'data/pool'
-POOL_CACHE = None
-MEAN_USER_CACHE = None
-BASE_KAGGLE_CACHE = None
+KAGGLE_PATH = PROJECT_ROOT / 'data' / 'kaggle' / 'results.csv'
+POOL_PATH   = PROJECT_ROOT / 'data' / 'pool'
+RESULTS_PATH = PROJECT_ROOT / 'tuners' / 'results' / 'hyperparameter_tune_results.csv'
 
 WC_START_DATES = {
     2002: '2002-05-31',
@@ -30,22 +35,11 @@ WC_START_DATES = {
 # Years with pool predictions to score against
 TUNING_YEARS = [2002, 2006, 2010, 2018, 2022]
 
-# Best hyperparameters found with hyperparameter_tune.py and competition wieghts found with competition_tune.py
-DECAY_LAMBDA   = 0.2
-TRAINING_YEARS = 12
-REGULARIZATION = 0.0001
-CONTINENTAL = 1.0
-QUALIFIER   = 0.5
-REGIONAL    = 0.3
-FRIENDLY    = 0.3
-
-# Confederation weights' search space
+# Hyperparameter search space
 SEARCH_SPACE = {
-    "elite":     [1.00, 1.10, 1.15, 1.20, 1.25],
-    "caf":       [1.00, 1.05, 1.10],
-    "concacaf":  [1.00, 1.05, 1.10],
-    "afc":       [0.95, 1.00, 1.05],
-    "ofc":       [0.90, 0.95, 1.00],
+    'decay_lambda':   [0.1, 0.15, 0.2, 0.25, 0.3],
+    'training_years': [6, 8, 10, 12, 14, 16],
+    'regularization': [0.0001, 0.001, 0.01],
 }
 
 def get_training_window(wc_year, training_years):
@@ -84,7 +78,8 @@ def compute_mean_user_points(year):
 
     return total_pts / n_users
 
-def run_single_year(year, elite, caf, concacaf, afc, ofc, pool_cache, mean_user_cache):
+def run_single_year(year, decay_lambda, training_years, regularization,
+                    pool_cache, mean_user_cache):
     """
     Fits the model and scores it for a single WC year.
     Returns the model's margin over the mean user.
@@ -94,53 +89,18 @@ def run_single_year(year, elite, caf, concacaf, afc, ofc, pool_cache, mean_user_
     """
     t0 = time.time()
     
-    pool = pool_cache[year]
+    pool     = pool_cache[year]
+    wc_teams = get_wc_teams(pool)
 
-    confederation_weights = build_confederation_weights(
-        elite,
-        caf,
-        concacaf,
-        afc,
-        ofc,
+    start_date, end_date = get_training_window(year, training_years)
+
+    kaggle_df = load_kaggle_data(
+        KAGGLE_PATH, wc_teams, start_date, end_date, decay_lambda
     )
 
-    kaggle_df = BASE_KAGGLE_CACHE[year].copy()
-
-    home_conf_weight = (
-        kaggle_df['home_confederation']
-        .map(confederation_weights)
-        .fillna(1.0)
-    )
-
-    away_conf_weight = (
-        kaggle_df['away_confederation']
-        .map(confederation_weights)
-        .fillna(1.0)
-    )
-
-    kaggle_df['confederation_weight'] = np.sqrt(home_conf_weight * away_conf_weight)
-
-    kaggle_df['weight'] = (
-        kaggle_df['base_weight']
-        * kaggle_df['confederation_weight']
-    )
-
-    kaggle_df = kaggle_df[
-        [
-            'date',
-            'home_team',
-            'away_team',
-            'home_score',
-            'away_score',
-            'neutral',
-            'weight'
-        ]
-    ]
-
-    model = DixonColes(kaggle_df, decay_lambda=DECAY_LAMBDA,
-                       regularization=REGULARIZATION)
+    model = DixonColes(kaggle_df, decay_lambda=decay_lambda,
+                       regularization=regularization)
     model.fit()
-    print(f"Model fitted for {year}")
 
     # Score model predictions against actual results
     games  = pool['games']
@@ -162,85 +122,21 @@ def run_single_year(year, elite, caf, concacaf, afc, ofc, pool_cache, mean_user_
     elapsed  = time.time() - t0
     return model_points, margin, elapsed
 
-def init_worker():
-    """
-    Runs once when each worker process starts.
-    Preloads data that never changes between combinations.
-    """
-    global POOL_CACHE
-    global MEAN_USER_CACHE
-    global BASE_KAGGLE_CACHE
-
-    POOL_CACHE = {
-        year: load_pool_data(POOL_PATH, year)
-        for year in TUNING_YEARS
-    }
-
-    MEAN_USER_CACHE = {
-        year: compute_mean_user_points(year)
-        for year in TUNING_YEARS
-    }
-
-    BASE_KAGGLE_CACHE = {}
-
-    competition_weights = build_competition_weights(
-        CONTINENTAL,
-        QUALIFIER,
-        REGIONAL,
-        FRIENDLY,
-    )
-
-    for year in TUNING_YEARS:
-        pool = POOL_CACHE[year]
-        wc_teams = get_wc_teams(pool)
-
-        start_date, end_date = get_training_window(
-            year,
-            TRAINING_YEARS
-        )
-
-        base_df = load_kaggle_base_data(
-            KAGGLE_PATH,
-            wc_teams,
-            start_date,
-            end_date,
-            DECAY_LAMBDA
-        )
-
-        base_df['competition_weight'] = (
-            base_df['tournament']
-            .map(competition_weights)
-        )
-
-        base_df['base_weight'] = (
-            base_df['competition_weight'] *
-            base_df['recency_weight']
-        )
-
-        BASE_KAGGLE_CACHE[year] = base_df
-
-    print(
-        f"Worker initialized "
-        f"(pid={os.getpid()})"
-    )
-
 def run_combo(args):
-    elite, caf, concacaf, afc, ofc = args
+    decay, train_years, reg = args
 
     year_margins = {}
     year_points  = {}
     year_times   = {}
 
+    # Each worker loads its own data independently
+    pool_cache      = {year: load_pool_data(POOL_PATH, year) for year in TUNING_YEARS}
+    mean_user_cache = {year: compute_mean_user_points(year) for year in TUNING_YEARS}
+
     for year in TUNING_YEARS:
         pts, margin, elapsed = run_single_year(
-            year,
-            elite,
-            caf,
-            concacaf,
-            afc,
-            ofc,
-            POOL_CACHE, 
-            MEAN_USER_CACHE
+            year, decay, train_years, reg,
+            pool_cache, mean_user_cache
         )
         year_margins[year] = margin
         year_points[year]  = pts
@@ -250,12 +146,10 @@ def run_combo(args):
     combo_time = sum(year_times.values())
 
     row = {
-        "elite": elite,
-        "caf": caf,
-        "concacaf": concacaf,
-        "afc": afc,
-        "ofc": ofc,
-        "avg_margin": avg_margin,
+        'decay_lambda':   decay,
+        'training_years': train_years,
+        'regularization': reg,
+        'avg_margin':     avg_margin,
         'combo_time_s':   round(combo_time, 1),
     }
     for year in TUNING_YEARS:
@@ -267,10 +161,10 @@ def run_combo(args):
 
 def run_tuning():
     """
-    Grid search over all competition weight combinations.
+    Grid search over all hyperparameter combinations.
     For each combination, fits the model on all tuning years and
     computes the average margin over mean user.
-    Saves results to confederation_tune_results.csv as it goes.
+    Saves results to hyperparameter_tune_results.csv as it goes.
     """
     mean_user_cache  = {year: compute_mean_user_points(year) for year in TUNING_YEARS}
 
@@ -286,13 +180,11 @@ def run_tuning():
 
     # Load existing results if resuming
     try:
-        existing = pd.read_csv('confederation_tune_results.csv')
+        existing = pd.read_csv(RESULTS_PATH)
         completed = set(
-            zip(existing['elite'],
-                existing['caf'],
-                existing['concacaf'],
-                existing['afc'],
-                existing['ofc'])
+            zip(existing['decay_lambda'],
+                existing['training_years'],
+                existing['regularization'])
         )
         results = existing.to_dict('records')
         print(f"Resuming... {len(completed)} combinations already done")
@@ -302,17 +194,13 @@ def run_tuning():
 
     # Filter to only remaining combos
     remaining = [
-        (dict(zip(keys, combo))['elite'],
-         dict(zip(keys, combo))['caf'],
-         dict(zip(keys, combo))['concacaf'],
-         dict(zip(keys, combo))['afc'],
-         dict(zip(keys, combo))['ofc'])
+        (dict(zip(keys, combo))['decay_lambda'],
+         dict(zip(keys, combo))['training_years'],
+         dict(zip(keys, combo))['regularization'])
         for combo in combos
-        if (dict(zip(keys, combo))['elite'],
-            dict(zip(keys, combo))['caf'],
-            dict(zip(keys, combo))['concacaf'],
-            dict(zip(keys, combo))['afc'],
-            dict(zip(keys, combo))['ofc']) not in completed
+        if (dict(zip(keys, combo))['decay_lambda'],
+            dict(zip(keys, combo))['training_years'],
+            dict(zip(keys, combo))['regularization']) not in completed
     ]
 
     print(f"\n{total - len(remaining)} done, {len(remaining)} remaining")
@@ -324,26 +212,24 @@ def run_tuning():
 
     # Build args list, pool_cache and mean_user_cache passed to each worker
     args_list = [
-        (elite, caf, concacaf, afc, ofc)
-        for elite, caf, concacaf, afc, ofc in remaining
+        (decay, train_years, reg)
+        for decay, train_years, reg in remaining
     ]
 
-    with ProcessPool(processes=n_workers, initializer=init_worker) as p:
+    with ProcessPool(processes=n_workers) as p:
         for i, row in enumerate(p.imap_unordered(run_combo, args_list)):
             results.append(row)
             print(f"[{len(results)}/{total}] "
-                  f"elite weight={row['elite']}, "
-                  f"caf weight={row['caf']}, "
-                  f"concacaf weight={row['concacaf']}, "
-                  f"afc weight={row['afc']}, "
-                  f"ofc weight={row['ofc']} → "
+                  f"decay={row['decay_lambda']}, "
+                  f"training_years={row['training_years']}, "
+                  f"reg={row['regularization']} → "
                   f"avg_margin={row['avg_margin']:+.2f} "
                   f"({row['combo_time_s']:.0f}s)")
 
             # Save after every completed combo
             pd.DataFrame(results).sort_values(
                 'avg_margin', ascending=False
-            ).to_csv('confederation_tune_results.csv', index=False)
+            ).to_csv(RESULTS_PATH, index=False)
 
     results_df = pd.DataFrame(results).sort_values('avg_margin', ascending=False)
 
@@ -351,16 +237,14 @@ def run_tuning():
     print("TOP 10 COMBINATIONS")
     print(f"{'='*70}")
     print(results_df.head(10)[[
-        'elite', 'caf', 'concacaf', 'afc', 'ofc', 'avg_margin'
+        'decay_lambda', 'training_years', 'regularization', 'avg_margin'
     ]].to_string(index=False))
 
     best = results_df.iloc[0]
     print(f"\nBest combination:")
-    print(f"  elite weight:   {best['elite']}")
-    print(f"  caf weight:   {best['caf']}")
-    print(f"  concacaf weight: {best['concacaf']}")
-    print(f"  afc weight: {best['afc']}")
-    print(f"  ofc weight: {best['ofc']}")
+    print(f"  decay_lambda:   {best['decay_lambda']}")
+    print(f"  training_years: {best['training_years']}")
+    print(f"  regularization: {best['regularization']}")
     print(f"  avg_margin:     {best['avg_margin']:+.2f}")
 
     return results_df
