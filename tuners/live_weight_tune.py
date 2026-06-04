@@ -179,10 +179,29 @@ def run_tuning():
     print(f"Running with {os.cpu_count()} logical cores")
     print("=" * 60)
 
+    # Load existing results if resuming
+    try:
+        existing = pd.read_csv('live_weight_tune_results.csv')
+        completed = set(existing['wc_match_weight'].tolist())
+        results = existing.to_dict('records')
+        print(f"Resuming... {len(completed)} weights already done")
+    except FileNotFoundError:
+        completed = set()
+        results   = []
+
+    remaining = [w for w in WEIGHT_SEARCH if w not in completed]
+    print(f"{len(completed)} done, {len(remaining)} remaining")
+    print("=" * 60)
+
     n_workers = max(1, os.cpu_count() - 2)
 
     with ProcessPool(processes=n_workers) as p:
-        results = p.map(run_weight_combo, WEIGHT_SEARCH)
+        for row in p.imap_unordered(run_weight_combo, remaining):
+            results.append(row)
+            pd.DataFrame(results).sort_values(
+                'avg_gain', ascending=False
+            ).to_csv('live_weight_tune_results.csv', index=False)
+            print(f"Saved {len(results)}/{len(WEIGHT_SEARCH)} completed")
 
     results_df = pd.DataFrame(results).sort_values('avg_gain', ascending=False)
 
@@ -192,8 +211,6 @@ def run_tuning():
     gain_cols = ['wc_match_weight', 'avg_static', 'avg_live', 'avg_gain'] + \
                 [f'gain_{y}' for y in TUNING_YEARS]
     print(results_df[gain_cols].to_string(index=False))
-
-    results_df.to_csv('live_weight_tune_results.csv', index=False)
 
     best = results_df.iloc[0]
     print(f"\nBest weight: {best['wc_match_weight']} → avg_gain={best['avg_gain']:+.2f}")

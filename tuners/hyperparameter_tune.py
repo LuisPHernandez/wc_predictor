@@ -21,7 +21,7 @@ from src.scoring import points_for_prediction
 
 KAGGLE_PATH = PROJECT_ROOT / 'data' / 'kaggle' / 'results.csv'
 POOL_PATH   = PROJECT_ROOT / 'data' / 'pool'
-RESULTS_PATH = PROJECT_ROOT / 'tuners' / 'results' / 'hyperparameter_tune_results.csv'
+RESULTS_PATH = PROJECT_ROOT / 'tuners' / 'results' / 'hyperparameter_tune_results_v2.csv'
 
 WC_START_DATES = {
     2002: '2002-05-31',
