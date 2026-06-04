@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np # pyrefly: ignore [missing-import] 
-from src.mappings import code_to_name
+from src.mappings import code_to_name, FIFA_NAME_TO_CONFEDERATION
 
 # Competition weights
 DEFAULT_COMPETITION_WEIGHTS = {
@@ -23,6 +23,16 @@ DEFAULT_COMPETITION_WEIGHTS = {
     'AFF Championship':                     0.5,
     'CFU Caribbean Cup':                    0.5,
     'Friendly':                             0.3,
+}
+
+# Confederation weights
+DEFAULT_CONFEDERATION_WEIGHTS = {
+    "CONMEBOL": 1.20,
+    "UEFA":     1.15,
+    "CAF":      1.05,
+    "CONCACAF": 1.05,
+    "AFC":      1.00,
+    "OFC":      0.95,
 }
 
 def build_competition_weights(
@@ -62,7 +72,27 @@ def build_competition_weights(
         'Friendly':                             friendly,
     }
 
-def load_kaggle_data(path, wc_teams, start_date, end_date, decay_lambda=0.2, competition_weights=None):
+def build_confederation_weights(
+    elite=1.15,
+    caf=1.05,
+    concacaf=1.05,
+    afc=1.00,
+    ofc=0.95,
+):
+    """
+    Creates a full confederation->weight mapping from a small
+    set of bucket weights.
+    """
+    return {
+        "CONMEBOL": elite,
+        "UEFA": elite,
+        "CAF": caf,
+        "CONCACAF": concacaf,
+        "AFC": afc,
+        "OFC": ofc,
+    }
+
+def load_kaggle_data(path, wc_teams, start_date, end_date, decay_lambda=0.2, competition_weights=None, confederation_weights=None):
     """
     Loads the Kaggle results.csv and returns a filtered, weighted DataFrame
     ready for Dixon-Coles fitting.
@@ -87,6 +117,9 @@ def load_kaggle_data(path, wc_teams, start_date, end_date, decay_lambda=0.2, com
     if competition_weights is None:
         competition_weights = DEFAULT_COMPETITION_WEIGHTS
 
+    if confederation_weights is None:
+        confederation_weights = DEFAULT_CONFEDERATION_WEIGHTS
+
     df = pd.read_csv(path)
     df['date'] = pd.to_datetime(df['date'])
 
@@ -99,8 +132,17 @@ def load_kaggle_data(path, wc_teams, start_date, end_date, decay_lambda=0.2, com
         (df['date'] <= pd.Timestamp(end_date))
     ].copy()
 
-    # Only keep matches where at least one team is in the WC
+    # Get WC teams
     wc_team_set = set(wc_teams)
+
+    # Check for missing confederation mapping
+    missing_wc_teams = sorted(wc_team_set - set(FIFA_NAME_TO_CONFEDERATION))
+    if missing_wc_teams:
+        raise KeyError(
+            f"Missing confederation mapping for WC teams: {missing_wc_teams}"
+        )
+
+    # Only keep matches where at least one team is in the WC
     df = df[
         df['home_team'].isin(wc_team_set) |
         df['away_team'].isin(wc_team_set)
@@ -119,8 +161,21 @@ def load_kaggle_data(path, wc_teams, start_date, end_date, decay_lambda=0.2, com
         -decay_lambda * df['years_ago']
     )
 
+    # Confederation weight
+    df['home_confederation'] = df['home_team'].map(FIFA_NAME_TO_CONFEDERATION)
+    df['away_confederation'] = df['away_team'].map(FIFA_NAME_TO_CONFEDERATION)
+
+    home_weight = df['home_confederation'].map(confederation_weights).fillna(1.0)
+    away_weight = df['away_confederation'].map(confederation_weights).fillna(1.0)
+
+    df['confederation_weight'] = np.sqrt(home_weight * away_weight)
+
     # Final weight
-    df['weight'] = df['competition_weight'] * df['recency_weight']
+    df['weight'] = (
+        df['competition_weight'] *
+        df['recency_weight'] *
+        df['confederation_weight']
+    )
 
     return df[['date', 'home_team', 'away_team',
                'home_score', 'away_score', 'neutral', 'weight']].reset_index(drop=True)
@@ -167,6 +222,15 @@ def load_kaggle_base_data(
     df['recency_weight'] = np.exp(
         -decay_lambda * df['years_ago']
     )
+
+    missing_wc_teams = sorted(wc_team_set - set(FIFA_NAME_TO_CONFEDERATION))
+    if missing_wc_teams:
+        raise KeyError(
+            f"Missing confederation mapping for WC teams: {missing_wc_teams}"
+        )
+
+    df["home_confederation"] = df["home_team"].map(FIFA_NAME_TO_CONFEDERATION)
+    df["away_confederation"] = df["away_team"].map(FIFA_NAME_TO_CONFEDERATION)
 
     return df.reset_index(drop=True)
 
