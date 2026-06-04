@@ -70,16 +70,17 @@ class DixonColes:
             self._neg_log_likelihood,
             params0,
             method='L-BFGS-B',
-            options={'maxiter': 3000, 'maxfun': 100000,
+            options={'maxiter': 3500, 'maxfun': 300000,
                      'ftol': 1e-9, 'gtol': 1e-6},
             callback=lambda x: None 
         )
         print(f"Iterations used: {result.nit}")
+        print(f"Function evals used: {result.nfev}")
+        print(f"Converged: {result.success}")
+        print(f"Stop reason: {result.message}")
+        print(f"Final NLL: {result.fun:.4f}")
 
         self.fitted_params = result.x
-
-        print(f"Converged: {result.success}")
-        print(f"Final NLL: {result.fun:.4f}")
 
         return self
 

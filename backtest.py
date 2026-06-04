@@ -1,5 +1,7 @@
 import pandas as pd
+import os
 from pathlib import Path
+from multiprocessing import Pool as ProcessPool
 from src.loader import load_kaggle_data, load_pool_data, get_wc_teams
 from src.model import DixonColes
 from src.scoring import points_for_prediction
@@ -32,7 +34,6 @@ def get_training_window(wc_year):
     end   = pd.Timestamp(WC_START_DATES[wc_year]) - pd.Timedelta(days=1)
     start = end - pd.DateOffset(years=TRAINING_YEARS)
     return start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d')
-
 
 def score_predictions(predictions_df, scores_df):
     """
@@ -72,7 +73,6 @@ def score_predictions(predictions_df, scores_df):
         .reset_index(drop=True)
     )
 
-
 def score_model(model_preds_df, scores_df):
     """
     Scores the model's predictions against actual results.
@@ -98,7 +98,6 @@ def score_model(model_preds_df, scores_df):
             actual['score1'], actual['score2']
         )
     return total
-
 
 def run_backtest(wc_year, decay_lambda=DECAY_LAMBDA, training_years=TRAINING_YEARS):
     """
@@ -204,6 +203,9 @@ def run_backtest(wc_year, decay_lambda=DECAY_LAMBDA, training_years=TRAINING_YEA
         'model_preds':  model_preds_df,
     }
 
+def run_backtest_worker(args):
+    year, decay_lambda, training_years = args
+    return run_backtest(year, decay_lambda=decay_lambda, training_years=training_years)
 
 def run_all_backtests(years=None, decay_lambda=DECAY_LAMBDA):
     """
@@ -217,18 +219,22 @@ def run_all_backtests(years=None, decay_lambda=DECAY_LAMBDA):
     if years is None:
         years = [2002, 2006, 2010, 2014, 2018, 2022]
 
-    results = []
-    for year in years:
-        result = run_backtest(year, decay_lambda=decay_lambda)
-        results.append(result)
+    args = [(year, decay_lambda, TRAINING_YEARS) for year in years]
 
-    # --- Summary table ---
+    n_workers = min(len(years), max(1, os.cpu_count() - 2))
+    print(f"Running {len(years)} backtests across {n_workers} workers...")
+
+    with ProcessPool(processes=n_workers) as p:
+        results = p.map(run_backtest_worker, args)
+
+    results.sort(key=lambda r: r['year'])
+
+    # Summary table
     print(f"\n{'='*50}")
     print("BACKTEST SUMMARY")
     print(f"{'='*50}")
     print(f"{'Year':<6} {'Points':<8} {'Games':<7} {'Rank':<6} {'Users':<7} {'Top %':<8}")
     print("-" * 44)
-
     for r in results:
         rank_str = str(r['model_rank']) if r['model_rank'] else 'N/A'
         pct_str  = (f"{100*r['model_rank']/r['n_users']:.0f}%"
@@ -236,8 +242,16 @@ def run_all_backtests(years=None, decay_lambda=DECAY_LAMBDA):
         print(f"{r['year']:<6} {r['model_points']:<8} {r['n_games']:<7} "
               f"{rank_str:<6} {r['n_users']:<7} {pct_str:<8}")
 
+    # 2014 breakdown
+    for r in results:
+        if r['year'] == 2014:
+            print("\n2014 GAME-BY-GAME")
+            print(r['model_preds'][['team1','team2','prediction','actual','points_earned']].to_string(index=False))
+
     return results
 
 
 if __name__ == '__main__':
+    from multiprocessing import freeze_support
+    freeze_support()  # needed on Windows
     results = run_all_backtests()
