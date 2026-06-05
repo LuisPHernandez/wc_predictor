@@ -28,7 +28,7 @@ WC_START_DATES = {
 # Tuned hyperparameters
 TRAINING_YEARS = 12
 DECAY_LAMBDA   = 0.2
-REGULARIZATION = 0.0001
+REGULARIZATION = 0.0010
 
 # Weight applied to completed WC matches when retraining
 WC_MATCH_WEIGHT = 5.0

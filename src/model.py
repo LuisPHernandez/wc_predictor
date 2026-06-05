@@ -4,6 +4,111 @@ from scipy.stats import poisson # pyrefly: ignore [missing-import]
 
 from src.scoring import points_for_prediction
 
+def outcome_probs_from_matrix(matrix):
+    """
+    Computes home/draw/away probabilities from a score matrix.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        Score probability matrix where [i,j] is P(home=i, away=j)
+
+    Returns
+    -------
+    dict
+        {
+            'home': float,
+            'draw': float,
+            'away': float,
+        }
+    """
+    home = float(np.sum(np.tril(matrix, -1)))
+    draw = float(np.sum(np.diag(matrix)))
+    away = float(np.sum(np.triu(matrix, 1)))
+
+    total = home + draw + away
+
+    return {
+        'home': home / total,
+        'draw': draw / total,
+        'away': away / total,
+    }
+
+def normalize_matrix(matrix):
+    """
+    Renormalizes a score matrix so probabilities sum to 1.
+    """
+    total = matrix.sum()
+
+    if total <= 0:
+        raise ValueError("Matrix probability mass is zero")
+
+    return matrix / total
+
+def blend_matrix_outcomes(matrix, bookmaker_probs, alpha):
+    """
+    Blends Dixon-Coles outcome probabilities with bookmaker probabilities
+    while preserving the model's scoreline structure.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        Dixon-Coles score probability matrix
+
+    bookmaker_probs : dict
+        {
+            'home': float,
+            'draw': float,
+            'away': float,
+        }
+
+    alpha : float
+        1.0 = pure model
+        0.0 = pure bookmaker
+
+    Returns
+    -------
+    np.ndarray
+        Reweighted probability matrix
+    """
+    model_probs = outcome_probs_from_matrix(matrix)
+
+    target_home = (
+        alpha * model_probs['home']
+        + (1 - alpha) * bookmaker_probs['home']
+    )
+
+    target_draw = (
+        alpha * model_probs['draw']
+        + (1 - alpha) * bookmaker_probs['draw']
+    )
+
+    target_away = (
+        alpha * model_probs['away']
+        + (1 - alpha) * bookmaker_probs['away']
+    )
+
+    home_factor = target_home / max(model_probs['home'], 1e-12)
+    draw_factor = target_draw / max(model_probs['draw'], 1e-12)
+    away_factor = target_away / max(model_probs['away'], 1e-12)
+
+    blended = matrix.copy()
+
+    n_rows, n_cols = blended.shape
+
+    for i in range(n_rows):
+        for j in range(n_cols):
+
+            if i > j:
+                blended[i, j] *= home_factor
+
+            elif i == j:
+                blended[i, j] *= draw_factor
+
+            else:
+                blended[i, j] *= away_factor
+
+    return normalize_matrix(blended)
 
 class DixonColes:
     """
@@ -15,7 +120,7 @@ class DixonColes:
     points under the pool's scoring rules.
     """
 
-    def __init__(self, df, decay_lambda=0.2, regularization=0.0001):
+    def __init__(self, df, decay_lambda=0.2, regularization=0.0010):
         """
         Parameters
         ----------

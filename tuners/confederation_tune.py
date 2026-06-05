@@ -41,7 +41,7 @@ TUNING_YEARS = [2002, 2006, 2010, 2018, 2022]
 # Best hyperparameters found with hyperparameter_tune.py and competition wieghts found with competition_tune.py
 DECAY_LAMBDA   = 0.2
 TRAINING_YEARS = 12
-REGULARIZATION = 0.0001
+REGULARIZATION = 0.0010
 CONTINENTAL = 1.0
 QUALIFIER   = 0.5
 REGIONAL    = 0.3
