@@ -5,17 +5,17 @@ print("RUNNING PURE MODEL")
 print("=" * 70)
 
 model_result = run_backtest(
-    2022,
+    2010,
     alpha=1.0,
 )
 
 print("\n" + "=" * 70)
-print("RUNNING PURE ODDS")
+print("RUNNING BLEND")
 print("=" * 70)
 
 odds_result = run_backtest(
-    2022,
-    alpha=0.0,
+    2010,
+    alpha=0.6,
 )
 
 # --------------------------------------------------
@@ -61,7 +61,7 @@ print("SUMMARY")
 print("=" * 70)
 
 print(f"Model points : {model_result['model_points']}")
-print(f"Odds points  : {odds_result['model_points']}")
+print(f"Blend points  : {odds_result['model_points']}")
 
 print()
 print(
