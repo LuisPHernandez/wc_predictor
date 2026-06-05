@@ -5,6 +5,7 @@ from multiprocessing import Pool as ProcessPool
 from src.loader import load_kaggle_data, load_pool_data, get_wc_teams
 from src.model import DixonColes
 from src.scoring import points_for_prediction
+from src.odds_loader import load_wc_odds_lookup
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 KAGGLE_PATH = PROJECT_ROOT / 'data' / 'kaggle' / 'results.csv'
@@ -99,7 +100,12 @@ def score_model(model_preds_df, scores_df):
         )
     return total
 
-def run_backtest(wc_year, decay_lambda=DECAY_LAMBDA, training_years=TRAINING_YEARS):
+def run_backtest(
+    wc_year,
+    decay_lambda=DECAY_LAMBDA,
+    training_years=TRAINING_YEARS,
+    alpha=1.0,
+):
     """
     Runs the full backtest for a single WC year.
 
@@ -139,9 +145,25 @@ def run_backtest(wc_year, decay_lambda=DECAY_LAMBDA, training_years=TRAINING_YEA
     games  = pool['games']
     scores = pool['scores']
 
+    odds_lookup = None
+
+    if alpha < 1.0:
+        odds_lookup = load_wc_odds_lookup(wc_year)
+
     model_preds = []
     for row in games.itertuples():
-        pred = model.predict(row.team1, row.team2, neutral=True)
+        bookmaker_probs = None
+
+        if odds_lookup is not None:
+            bookmaker_probs = odds_lookup.get(row.game_id)
+            
+        pred = model.predict(
+            row.team1,
+            row.team2,
+            neutral=True,
+            bookmaker_probs=bookmaker_probs,
+            alpha=alpha,
+        )
         model_preds.append({
             'game_id':   row.game_id,
             'team1':     row.team1,

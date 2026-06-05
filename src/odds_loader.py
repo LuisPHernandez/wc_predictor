@@ -1,8 +1,6 @@
-# odds_loader.py
-
 import sys
 from pathlib import Path
-
+from src.loader import load_pool_data
 import pandas as pd
 import numpy as np
 
@@ -27,6 +25,125 @@ ODDS_NAME_TO_FIFA = {
     'Bosnia & Herzegovina': 'Bosnia and Herzegovina',
     # add more here if mismatches are found during validation
 }
+
+def load_wc_odds_lookup(year, path=ODDS_PATH):
+    """
+    Returns bookmaker probabilities keyed by pool game_id.
+
+    {
+        game_id: {
+            "home": p_home,
+            "draw": p_draw,
+            "away": p_away,
+        }
+    }
+    """
+
+    odds = pd.read_excel(
+        path,
+        sheet_name=WC_SHEETS[year]
+    )
+
+    odds["match_date"] = pd.to_datetime(
+        odds["Date"]
+    ).dt.date
+
+    odds["home_team"] = odds["Home"].apply(
+        _resolve_team
+    )
+
+    odds["away_team"] = odds["Away"].apply(
+        _resolve_team
+    )
+
+    pool = load_pool_data(
+        POOL_PATH,
+        year
+    )
+
+    games = pool["games"].copy()
+
+    games["match_date"] = pd.to_datetime(
+        games["datetime"],
+        utc=True
+    ).dt.normalize().dt.date
+
+    print(games[["datetime", "match_date"]].head())
+
+    game_lookup = {}
+
+    for row in games.itertuples():
+        game_lookup[
+            (
+                row.match_date,
+                row.team1,
+                row.team2,
+            )
+        ] = row.game_id
+
+    odds_lookup = {}
+
+    missing_matches = []
+
+    for _, row in odds.iterrows():
+
+        h_odds = row["H-Avg"]
+        d_odds = row["D-Avg"]
+        a_odds = row["A-Avg"]
+
+        if (
+            pd.isna(h_odds)
+            or pd.isna(d_odds)
+            or pd.isna(a_odds)
+        ):
+            continue
+
+        if (
+            h_odds <= 1.0
+            or d_odds <= 1.0
+            or a_odds <= 1.0
+        ):
+            continue
+
+        key = (
+            row["match_date"],
+            row["home_team"],
+            row["away_team"],
+        )
+
+        game_id = game_lookup.get(key)
+
+        if game_id is None:
+            missing_matches.append(key)
+            continue
+
+        p_home, p_draw, p_away = _shin_probs(
+            h_odds,
+            d_odds,
+            a_odds,
+        )
+
+        odds_lookup[game_id] = {
+            "home": p_home,
+            "draw": p_draw,
+            "away": p_away,
+        }
+
+    print(
+        f"{year}: matched "
+        f"{len(odds_lookup)} odds rows"
+    )
+
+    if missing_matches:
+        print(
+            f"{year}: WARNING "
+            f"{len(missing_matches)} unmatched games"
+        )
+
+        for m in missing_matches[:10]:
+            print("   ", m)
+
+    return odds_lookup
 
 def _resolve_team(name):
     return ODDS_NAME_TO_FIFA.get(name, name)
