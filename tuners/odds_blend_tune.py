@@ -10,7 +10,6 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from multiprocessing import Pool as ProcessPool
-from src.odds_loader import load_wc_odds_lookup
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -19,6 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.loader import load_pool_data, get_wc_teams, build_competition_weights, build_confederation_weights, load_kaggle_base_data
 from src.model import DixonColes
 from src.scoring import points_for_prediction
+from src.odds_loader import load_wc_odds_lookup
 
 KAGGLE_PATH = PROJECT_ROOT / 'data' / 'kaggle' / 'results.csv'
 POOL_PATH   = PROJECT_ROOT / 'data' / 'pool'
@@ -38,7 +38,7 @@ WC_START_DATES = {
 }
 
 # Years with pool predictions to score against
-TUNING_YEARS = [2014, 2018, 2022]
+TUNING_YEARS = [2006, 2010, 2018, 2022]
 
 # Best hyperparameters found with hyperparameter_tune.py and weights found with competition_tune.py and confederation_tune.py
 DECAY_LAMBDA   = 0.2

@@ -10,7 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.mappings import code_to_name, ODDS_NAME_TO_FIFA
 
-ODDS_PATH  = Path(__file__).resolve().parent / 'WorldCup2026.xlsx'
+ODDS_PATH  = PROJECT_ROOT / "data" / "odds" / 'WorldCup2026.xlsx'
 CSV_ODDS_YEARS = {
     2006: PROJECT_ROOT / "data" / "odds" / "2006_odds.csv",
     2010: PROJECT_ROOT / "data" / "odds" / "2010_odds.csv",
@@ -78,6 +78,12 @@ def load_wc_odds_lookup_csv(year):
     odds_lookup = {}
 
     for _, row in odds.iterrows():
+        if (
+            pd.isna(row["h_odds_avg"])
+            or pd.isna(row["d_odds_avg"])
+            or pd.isna(row["a_odds_avg"])
+        ):
+            continue
 
         key = (
             row["match_date"],
@@ -88,6 +94,13 @@ def load_wc_odds_lookup_csv(year):
         game_id = game_lookup.get(key)
 
         if game_id is None:
+            continue
+
+        if (
+            row["h_odds_avg"] <= 1.0
+            or row["d_odds_avg"] <= 1.0
+            or row["a_odds_avg"] <= 1.0
+        ):
             continue
 
         p_home, p_draw, p_away = _shin_probs(

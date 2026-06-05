@@ -5,7 +5,7 @@ print("RUNNING PURE MODEL")
 print("=" * 70)
 
 model_result = run_backtest(
-    2010,
+    2006,
     alpha=1.0,
 )
 
@@ -13,8 +13,8 @@ print("\n" + "=" * 70)
 print("RUNNING BLEND")
 print("=" * 70)
 
-odds_result = run_backtest(
-    2010,
+blend_result = run_backtest(
+    2006,
     alpha=0.6,
 )
 
@@ -33,7 +33,7 @@ model_preds = model_result["model_preds"][
     ]
 ].copy()
 
-odds_preds = odds_result["model_preds"][
+blend_preds = blend_result["model_preds"][
     [
         "game_id",
         "prediction",
@@ -42,14 +42,14 @@ odds_preds = odds_result["model_preds"][
 ].copy()
 
 comparison = model_preds.merge(
-    odds_preds,
+    blend_preds,
     on="game_id",
-    suffixes=("_model", "_odds"),
+    suffixes=("_model", "_blend"),
 )
 
 changed = comparison[
     comparison["prediction_model"]
-    != comparison["prediction_odds"]
+    != comparison["prediction_blend"]
 ].copy()
 
 # --------------------------------------------------
@@ -61,7 +61,7 @@ print("SUMMARY")
 print("=" * 70)
 
 print(f"Model points : {model_result['model_points']}")
-print(f"Blend points  : {odds_result['model_points']}")
+print(f"Blend points  : {blend_result['model_points']}")
 
 print()
 print(
@@ -87,10 +87,10 @@ else:
                 "team1",
                 "team2",
                 "prediction_model",
-                "prediction_odds",
+                "prediction_blend",
                 "actual",
                 "points_earned_model",
-                "points_earned_odds",
+                "points_earned_blend",
             ]
         ].to_string(index=False)
     )
@@ -102,7 +102,7 @@ else:
 if len(changed) > 0:
 
     changed["point_delta"] = (
-        changed["points_earned_odds"]
+        changed["points_earned_blend"]
         - changed["points_earned_model"]
     )
 
@@ -116,10 +116,10 @@ if len(changed) > 0:
                 "team1",
                 "team2",
                 "prediction_model",
-                "prediction_odds",
+                "prediction_blend",
                 "actual",
                 "points_earned_model",
-                "points_earned_odds",
+                "points_earned_blend",
                 "point_delta",
             ]
         ].to_string(index=False)
