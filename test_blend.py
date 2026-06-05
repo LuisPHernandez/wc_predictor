@@ -64,3 +64,34 @@ blended_matrix = blend_matrix_outcomes(
 
 print("\nBlended outcome probabilities:")
 print(outcome_probs_from_matrix(blended_matrix))
+
+print("\nPure model prediction:")
+print(
+    model.predict(
+        "Argentina",
+        "France",
+        neutral=True
+    )
+)
+
+print("\n50/50 blend prediction:")
+print(
+    model.predict(
+        "Argentina",
+        "France",
+        neutral=True,
+        bookmaker_probs=bookmaker_probs,
+        alpha=0.5,
+    )
+)
+
+print("\nPure bookmaker-adjusted prediction:")
+print(
+    model.predict(
+        "Argentina",
+        "France",
+        neutral=True,
+        bookmaker_probs=bookmaker_probs,
+        alpha=0.0,
+    )
+)
