@@ -313,7 +313,15 @@ class DixonColes:
 
         return matrix, lh, la
 
-    def predict(self, home_team, away_team, neutral=True, max_goals=8):
+    def predict(
+        self,
+        home_team,
+        away_team,
+        neutral=True,
+        max_goals=8,
+        bookmaker_probs=None,
+        alpha=1.0,
+    ):
         """
         Finds the scoreline prediction that maximizes expected points
         under the pool's scoring rules.
@@ -331,6 +339,13 @@ class DixonColes:
         """
         matrix, lh, la = self.score_matrix(home_team, away_team,
                                            neutral, max_goals)
+
+        if bookmaker_probs is not None:
+            matrix = blend_matrix_outcomes(
+                matrix,
+                bookmaker_probs,
+                alpha
+            )
 
         best_pred = (0, 0)
         best_ep   = -1.0
