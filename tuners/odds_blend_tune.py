@@ -37,7 +37,7 @@ WC_START_DATES = {
 }
 
 # Years with pool predictions to score against
-TUNING_YEARS = [2018, 2022]
+TUNING_YEARS = [2006, 2010, 2018, 2022]
 
 # Best hyperparameters found with hyperparameter_tune.py and weights found with competition_tune.py and confederation_tune.py
 DECAY_LAMBDA   = 0.2

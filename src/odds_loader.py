@@ -8,9 +8,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.mappings import code_to_name
+from src.mappings import code_to_name, ODDS_NAME_TO_FIFA
 
-ODDS_PATH  = Path(__file__).resolve().parent / 'WorldCup2026.xlsx'
+ODDS_PATH  = PROJECT_ROOT / "data" / "odds" / 'WorldCup2026.xlsx'
+CSV_ODDS_YEARS = {
+    2006: PROJECT_ROOT / "data" / "odds" / "2006_odds.csv",
+    2010: PROJECT_ROOT / "data" / "odds" / "2010_odds.csv",
+}
 POOL_PATH  = PROJECT_ROOT / 'data' / 'pool'
 
 WC_SHEETS = {
@@ -19,12 +23,105 @@ WC_SHEETS = {
     2022: 'WorldCup2022',
 }
 
-# Team name mapping from odds file -> full name used in mappings.py
-ODDS_NAME_TO_FIFA = {
-    'USA':                  'United States',
-    'Bosnia & Herzegovina': 'Bosnia and Herzegovina',
-    # add more here if mismatches are found during validation
-}
+def load_wc_odds_lookup_csv(year):
+    """
+    Loads bookmaker odds from a CSV and returns:
+
+    {
+        game_id: {
+            "home": p_home,
+            "draw": p_draw,
+            "away": p_away,
+        }
+    }
+    """
+
+    path = CSV_ODDS_YEARS[year]
+
+    odds = pd.read_csv(path)
+
+    odds["home_team"] = odds["home_team"].apply(
+        _resolve_team
+    )
+
+    odds["away_team"] = odds["away_team"].apply(
+        _resolve_team
+    )
+
+    odds["match_date"] = pd.to_datetime(
+        odds["date"]
+    ).dt.date
+
+    pool = load_pool_data(
+        POOL_PATH,
+        year
+    )
+
+    games = pool["games"].copy()
+
+    games["match_date"] = pd.to_datetime(
+        games["datetime"],
+        utc=True
+    ).dt.date
+
+    game_lookup = {}
+
+    for row in games.itertuples():
+        game_lookup[
+            (
+                row.match_date,
+                row.team1,
+                row.team2,
+            )
+        ] = row.game_id
+
+    odds_lookup = {}
+
+    for _, row in odds.iterrows():
+        if (
+            pd.isna(row["h_odds_avg"])
+            or pd.isna(row["d_odds_avg"])
+            or pd.isna(row["a_odds_avg"])
+        ):
+            continue
+
+        key = (
+            row["match_date"],
+            row["home_team"],
+            row["away_team"],
+        )
+
+        game_id = game_lookup.get(key)
+
+        if game_id is None:
+            continue
+
+        if (
+            row["h_odds_avg"] <= 1.0
+            or row["d_odds_avg"] <= 1.0
+            or row["a_odds_avg"] <= 1.0
+        ):
+            continue
+
+        p_home, p_draw, p_away = _shin_probs(
+            row["h_odds_avg"],
+            row["d_odds_avg"],
+            row["a_odds_avg"],
+        )
+
+        odds_lookup[game_id] = {
+            "home": p_home,
+            "draw": p_draw,
+            "away": p_away,
+        }
+
+    print(
+        f"{year}: matched "
+        f"{len(odds_lookup)} "
+        f"of {len(games)} matches"
+    )
+
+    return odds_lookup
 
 def load_wc_odds_lookup(year, path=ODDS_PATH):
     """
@@ -38,6 +135,8 @@ def load_wc_odds_lookup(year, path=ODDS_PATH):
         }
     }
     """
+    if year in CSV_ODDS_YEARS:
+        return load_wc_odds_lookup_csv(year)
 
     odds = pd.read_excel(
         path,
@@ -67,8 +166,6 @@ def load_wc_odds_lookup(year, path=ODDS_PATH):
         games["datetime"],
         utc=True
     ).dt.normalize().dt.date
-
-    print(games[["datetime", "match_date"]].head())
 
     game_lookup = {}
 
