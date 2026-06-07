@@ -350,6 +350,9 @@ class DixonColes:
         best_pred = (0, 0)
         best_ep   = -1.0
 
+        second_pred = None
+        second_ep = -1.0
+
         for ph in range(max_goals):
             for pa in range(max_goals):
                 ep = sum(
@@ -358,8 +361,15 @@ class DixonColes:
                     for aa in range(max_goals)
                 )
                 if ep > best_ep:
-                    best_ep   = ep
+                    second_ep = best_ep
+                    second_pred = best_pred
+
+                    best_ep = ep
                     best_pred = (ph, pa)
+
+                elif ep > second_ep:
+                    second_ep = ep
+                    second_pred = (ph, pa)
 
         # Match outcome probabilities
         home_win = np.sum(np.tril(matrix, -1))  # i > j  (home scores more)
@@ -367,17 +377,33 @@ class DixonColes:
         away_win = np.sum(np.triu(matrix, 1))   # j > i
 
         return {
-            'home_team':    home_team,
-            'away_team':    away_team,
-            'prediction':   f"{best_pred[0]}-{best_pred[1]}",
-            'pred_home':    best_pred[0],
-            'pred_away':    best_pred[1],
+            'home_team': home_team,
+            'away_team': away_team,
+
+            'prediction': f"{best_pred[0]}-{best_pred[1]}",
+            'pred_home': best_pred[0],
+            'pred_away': best_pred[1],
+
+            'second_prediction': (
+                None if second_pred is None
+                else f"{second_pred[0]}-{second_pred[1]}"
+            ),
+            'second_pred_home': (
+                None if second_pred is None else second_pred[0]
+            ),
+            'second_pred_away': (
+                None if second_pred is None else second_pred[1]
+            ),
+
             'expected_pts': best_ep,
-            'home_win':     home_win,
-            'draw':         draw,
-            'away_win':     away_win,
-            'lambda_home':  lh,
-            'lambda_away':  la,
+            'second_expected_pts': second_ep,
+            'decision_margin': best_ep - second_ep,
+
+            'home_win': home_win,
+            'draw': draw,
+            'away_win': away_win,
+            'lambda_home': lh,
+            'lambda_away': la,
         }
 
     # ------------------------------------------------------------------

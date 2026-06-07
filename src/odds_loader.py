@@ -68,7 +68,7 @@ def load_wc_odds_lookup_csv(year):
 
     for row in games.itertuples():
         game_lookup[
-            (
+            _matchup_key(
                 row.match_date,
                 row.team1,
                 row.team2,
@@ -85,7 +85,7 @@ def load_wc_odds_lookup_csv(year):
         ):
             continue
 
-        key = (
+        key = _matchup_key(
             row["match_date"],
             row["home_team"],
             row["away_team"],
@@ -245,6 +245,11 @@ def load_wc_odds_lookup(year, path=ODDS_PATH):
 def _resolve_team(name):
     return ODDS_NAME_TO_FIFA.get(name, name)
 
+def _matchup_key(match_date, team1, team2):
+    return (
+        match_date,
+        *sorted([team1, team2])
+    )
 
 def _shin_probs(h_odds, d_odds, a_odds):
     """
