@@ -5,7 +5,7 @@ print("RUNNING PURE MODEL")
 print("=" * 70)
 
 model_result = run_backtest(
-    2006,
+    2014,
     alpha=1.0,
 )
 
@@ -14,7 +14,7 @@ print("RUNNING BLEND")
 print("=" * 70)
 
 blend_result = run_backtest(
-    2006,
+    2014,
     alpha=0.6,
 )
 

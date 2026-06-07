@@ -167,8 +167,6 @@ def load_wc_odds_lookup(year, path=ODDS_PATH):
         utc=True
     ).dt.normalize().dt.date
 
-    print(games[["datetime", "match_date"]].head())
-
     game_lookup = {}
 
     for row in games.itertuples():
