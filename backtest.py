@@ -120,6 +120,7 @@ def run_backtest(
     """
     print(f"\n{'='*50}")
     print(f"Backtesting {wc_year} World Cup")
+    print(f"Alpha: {alpha:.2f}")
     print(f"{'='*50}")
 
     # --- Load pool data ---
@@ -273,7 +274,50 @@ def run_all_backtests(years=None, decay_lambda=DECAY_LAMBDA):
     return results
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    import sys
     from multiprocessing import freeze_support
-    freeze_support()  # needed on Windows
-    results = run_all_backtests()
+
+    freeze_support()
+
+    # No arguments -> run all backtests
+    if len(sys.argv) == 1:
+        run_all_backtests()
+
+    # One argument -> year
+    elif len(sys.argv) == 2:
+
+        year = int(sys.argv[1])
+
+        result = run_backtest(
+            year,
+        )
+
+        print(
+            f"\nFinal score: "
+            f"{result['model_points']} points"
+        )
+
+    # Two arguments -> year + alpha
+    elif len(sys.argv) == 3:
+
+        year = int(sys.argv[1])
+        alpha = float(sys.argv[2])
+
+        result = run_backtest(
+            year,
+            alpha=alpha,
+        )
+
+        print(
+            f"\nFinal score: "
+            f"{result['model_points']} points"
+        )
+
+    else:
+        raise ValueError(
+            "Usage:\n"
+            "  py -3 backtest.py\n"
+            "  py -3 backtest.py <year>\n"
+            "  py -3 backtest.py <year> <alpha>"
+        )
