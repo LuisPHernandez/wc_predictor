@@ -301,8 +301,17 @@ class DixonColes:
         away_team = self._resolve_team(away_team)
 
         lh, la = self._get_lambda(home_team, away_team, neutral)
-        lh     = lh * self.goal_inflation
-        la     = la * self.goal_inflation
+
+        lambda_total = lh + la
+
+        if lambda_total < 3.0:
+            k = 1.15
+        else:
+            k = 0.90
+
+        lh *= k
+        la *= k
+
         rho    = self.fitted_params[2 * self.n_teams + 1]
 
         matrix = np.zeros((max_goals, max_goals))

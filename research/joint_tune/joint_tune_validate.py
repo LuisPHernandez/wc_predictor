@@ -96,7 +96,7 @@ def validate_on_2022(combo_row):
     import sys
     sys.path.insert(0, str(PROJECT_ROOT))
 
-    from joint_tune_worker import (
+    from research.joint_tune.joint_tune_worker import (
         _fit_dixon_coles, _get_lambda, _score_matrix,
         _blend_matrix, _best_pred_pts,
         COMPETITION_WEIGHTS, RHO_ESTIMATE,

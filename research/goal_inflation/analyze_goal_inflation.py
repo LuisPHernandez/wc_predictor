@@ -27,10 +27,15 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from scipy.stats import poisson # pyrefly: ignore [missing-import]
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.scoring import points_for_prediction
 
-CSV_PATH       = Path(__file__).resolve().parent / "wc_analysis.csv"
+CSV_PATH       = PROJECT_ROOT / "data" / "analysis" / "wc_analysis.csv"
 TRAINING_YEARS = [2006, 2010, 2014, 2018]
 HOLDOUT_YEAR   = 2022
 ALL_YEARS      = TRAINING_YEARS + [HOLDOUT_YEAR]
