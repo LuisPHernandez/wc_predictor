@@ -1,10 +1,11 @@
-from bs4 import BeautifulSoup # pyrefly: ignore [missing-import]
+from bs4 import BeautifulSoup
 import pandas as pd
 import re
 import time
-from selenium import webdriver # pyrefly: ignore [missing-import]
-from selenium.webdriver.chrome.service import Service # pyrefly: ignore [missing-import]
-from webdriver_manager.chrome import ChromeDriverManager # pyrefly: ignore [missing-import]
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 # ----------------------------------- Config ------------------------------------------
 
@@ -18,7 +19,6 @@ OUTPUT_FILE = "wc_expected_goals.csv"
 # ----------------------------------- Helpers ------------------------------------------
 
 def collect_match_links(driver, url):
-    """Navigate to results page and collect all (home, away, ou_url) tuples."""
     driver.get("about:blank")
     time.sleep(1)
     driver.get(url)
@@ -34,19 +34,26 @@ def collect_match_links(driver, url):
         link_el = row.select_one("a[href]")
         if not link_el:
             continue
-        ou_url = "https://www.cuotasahora.com" + link_el["href"].rstrip("/") + "/:over-under;2"
-        matches.append((teams[0], teams[1], ou_url))
+        matches.append((teams[0], teams[1], link_el["href"]))
 
     return matches
 
 
-def get_ou_line(driver, ou_url):
-    """
-    Navigate to O/U page and find the goal line where over/under odds are closest.
-    Parses goal line from the option box text, odds from odd-container-default p tags.
-    """
-    driver.get(ou_url)
+def get_ou_line(driver, match_href):
+    # Land on 1x2 page first (full page load)
+    driver.get("about:blank")
+    time.sleep(1)
+    driver.get("https://www.cuotasahora.com" + match_href)
     time.sleep(8)
+
+    # Click the O/U tab via JS — direct URL navigation gets redirected back to 1x2
+    try:
+        ou_tab = driver.find_element(By.XPATH, '//a[.//div[text()="Más/Menos de"]]')
+        driver.execute_script('arguments[0].click();', ou_tab)
+        time.sleep(8)
+    except Exception as e:
+        print(f"    Could not click O/U tab: {e}")
+        return None
 
     html = BeautifulSoup(driver.page_source, "html.parser")
     rows = html.select('[data-testid="over-under-collapsed-row"]')
@@ -55,18 +62,15 @@ def get_ou_line(driver, ou_url):
     best_diff = float("inf")
 
     for row in rows:
-        # Goal line: grab the full text of the option box and regex out the number
         option_box = row.select_one('[data-testid="over-under-collapsed-option-box"]')
         if not option_box:
             continue
-        # Use the first <p> tag text (avoids mobile duplicate)
         label_text = option_box.find("p").get_text(strip=True) if option_box.find("p") else ""
         m = re.search(r"\+?([\d.]+)", label_text)
         if not m:
             continue
         goal_line = float(m.group(1))
 
-        # Odds: all p tags with data-testid="odd-container-default" inside this row
         odds_els = row.select('p[data-testid="odd-container-default"]')
         if len(odds_els) < 2:
             continue
@@ -95,17 +99,24 @@ for results_url in URLS:
     all_matches = []
     for page in [1, 2]:
         url = results_url if page == 1 else f"{results_url}#/page/2/"
+
+        if page == 2:
+            driver.get("about:blank")
+            time.sleep(1)
+            driver.get(results_url)
+            time.sleep(6)
+
         matches = collect_match_links(driver, url)
         print(f"  Page {page}: found {len(matches)} matches")
         all_matches.extend(matches)
         if len(matches) == 0:
-            break  # no second page
+            break
 
     print(f"  Total: {len(all_matches)} matches to scrape")
 
-    for i, (home, away, ou_url) in enumerate(all_matches):
+    for i, (home, away, href) in enumerate(all_matches):
         try:
-            ou_line = get_ou_line(driver, ou_url)
+            ou_line = get_ou_line(driver, href)
 
             if ou_line is None:
                 print(f"  [{i+1}/{len(all_matches)}] {home} vs {away} — no O/U data, skipping")
