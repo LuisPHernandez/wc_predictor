@@ -1,0 +1,28 @@
+JOINT TUNE FINAL RECOMMENDATION
+==================================================
+
+BEST ON 2022 HOLDOUT:
+  decay_lambda  = 0.1
+  regularization= 0.001
+  elite         = 1.0
+  caf           = 1.1
+  concacaf      = 1.05
+  afc           = 0.95
+  ofc           = 0.9
+  alpha         = 0.75
+  goal_inflation= 1.2
+  2022 pts      = 62
+  weighted train= 190.9500
+
+BEST BALANCED:
+  decay_lambda  = 0.1
+  regularization= 0.001
+  elite         = 1.0
+  caf           = 1.1
+  concacaf      = 1.05
+  afc           = 0.95
+  ofc           = 0.9
+  alpha         = 0.75
+  goal_inflation= 1.2
+  2022 pts      = 62
+  weighted train= 190.9500

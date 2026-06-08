@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR  = PROJECT_ROOT / "research" / "joint_tune"
 
 # Current production parameters (baseline to beat)
@@ -37,7 +37,15 @@ CURRENT_K             = 1.15
 CURRENT_WEIGHTED_SCORE = None   # filled in from results
 
 # How many top combinations to validate on holdout
-TOP_N_TO_VALIDATE = 20
+TOP_N_TO_VALIDATE = 25
+
+HOLDOUTS = [
+    2006,
+    2010,
+    2014,
+    2018,
+    2022,
+]
 
 YEAR_WEIGHTS = {
     2006: 0.50,
@@ -88,7 +96,7 @@ def load_results():
 # Validate one combination on 2022
 # ---------------------------------------------------------------------------
 
-def validate_on_2022(combo_row):
+def validate_on_2022(combo_row, holdout_year):
     """
     Fits the model on 2006-2018 with the given parameters and
     evaluates on 2022. Returns points scored on 2022.
@@ -96,7 +104,7 @@ def validate_on_2022(combo_row):
     import sys
     sys.path.insert(0, str(PROJECT_ROOT))
 
-    from joint_tune_worker import (
+    from research.joint_tune.joint_tune_worker import (
         _fit_dixon_coles, _get_lambda, _score_matrix,
         _blend_matrix, _best_pred_pts,
         COMPETITION_WEIGHTS, RHO_ESTIMATE,
@@ -107,7 +115,7 @@ def validate_on_2022(combo_row):
 
     KAGGLE_PATH = PROJECT_ROOT / "data" / "kaggle" / "results.csv"
     POOL_PATH   = PROJECT_ROOT / "data" / "pool"
-    HOLDOUT     = 2022
+    HOLDOUT = holdout_year
 
     decay_lambda   = combo_row["decay_lambda"]
     regularization = combo_row["regularization"]
@@ -180,6 +188,53 @@ def validate_on_2022(combo_row):
 
     return total_pts, None
 
+def run_candidate_cv(candidate):
+
+    print()
+    print(SEP)
+    print("LEAVE-ONE-WC-OUT")
+    print(SEP)
+
+    rows = []
+
+    for holdout in HOLDOUTS:
+
+        pts, err = validate_on_2022(
+            candidate,
+            holdout,
+        )
+
+        rows.append({
+            "holdout": holdout,
+            "points": pts,
+        })
+
+    return pd.DataFrame(rows)
+
+CURRENT_CANDIDATE = {
+    "decay_lambda": 0.20,
+    "regularization": 0.001,
+    "elite": 1.00,
+    "caf": 1.10,
+    "concacaf": 1.05,
+    "afc": 0.95,
+    "ofc": 0.90,
+    "best_alpha": 0.30,
+    "best_k": 1.15,
+}
+
+NEW_CANDIDATE = {
+    "decay_lambda": 0.10,
+    "regularization": 0.001,
+    "elite": 1.00,
+    "caf": 1.10,
+    "concacaf": 1.05,
+    "afc": 0.95,
+    "ofc": 0.90,
+    "best_alpha": 0.75,
+    "best_k": 1.20,
+}
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -191,6 +246,15 @@ def main():
 
     df = load_results()
     df = df.sort_values("best_weighted_score", ascending=False).reset_index(drop=True)
+    print()
+    print(SEP)
+    print("GRID SIZE")
+    print(SEP)
+
+    print(
+        f"Total parameter combinations: "
+        f"{len(df)}"
+    )
 
     # ---------------------------------------------------------------------------
     # Find current production score in results for baseline comparison
@@ -240,10 +304,12 @@ def main():
     # ---------------------------------------------------------------------------
 
     print(f"\n{SEP}")
-    print("PARAMETER DISTRIBUTION IN TOP 50 COMBINATIONS")
+    print(
+        f"PARAMETER DISTRIBUTION IN TOP {len(df)} COMBINATIONS"
+    )
     print(SEP)
 
-    top50 = df.head(50)
+    top50 = df.copy()
     for col in ["decay_lambda", "regularization", "elite", "caf",
                 "concacaf", "afc", "ofc", "best_alpha", "best_k"]:
         vc = top50[col].value_counts().sort_index()
@@ -266,7 +332,10 @@ def main():
     for i, (_, row) in enumerate(top_combos.iterrows()):
         print(f"  Validating {i+1}/{TOP_N_TO_VALIDATE}: combo_id={int(row['combo_id'])}  "
               f"(train weighted={row['best_weighted_score']:.2f}) ...", end=" ", flush=True)
-        pts_2022, err = validate_on_2022(row)
+        pts_2022, err = validate_on_2022(
+            row,
+            2022,
+        )
         if err:
             print(f"ERROR: {err}")
         else:
@@ -371,6 +440,63 @@ def main():
     rec_path.write_text("\n".join(rec_lines))
     print(f"\nRecommendation saved to {rec_path}")
     print(f"Full validation results saved to {RESULTS_DIR / 'validation_results.csv'}")
+
+    print()
+    print(SEP)
+    print("CURRENT VS NEW")
+    print(SEP)
+
+    current_cv = run_candidate_cv(
+        CURRENT_CANDIDATE
+    )
+
+    new_cv = run_candidate_cv(
+        NEW_CANDIDATE
+    )
+
+    comparison = (
+        current_cv
+        .merge(
+            new_cv,
+            on="holdout",
+            suffixes=(
+                "_current",
+                "_new",
+            )
+        )
+    )
+
+    comparison["delta"] = (
+        comparison["points_new"]
+        -
+        comparison["points_current"]
+    )
+
+    print(
+        comparison.to_string(
+            index=False
+        )
+    )
+
+    print()
+    print(
+        "Current total:",
+        comparison[
+            "points_current"
+        ].sum()
+    )
+
+    print(
+        "New total:",
+        comparison[
+            "points_new"
+        ].sum()
+    )
+
+    print(
+        "Delta:",
+        comparison["delta"].sum()
+    )
 
 
 if __name__ == "__main__":

@@ -142,7 +142,7 @@ def main():
     print(f"Workers: {n_workers}\n")
 
     # Import here so multiprocessing doesn't import at module level
-    from joint_tune_worker import run_combination
+    from research.joint_tune.joint_tune_worker import run_combination
 
     CHECKPOINT_EVERY = 20   # save every N completed combos
     batch_results    = []
