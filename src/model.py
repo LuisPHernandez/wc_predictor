@@ -120,7 +120,7 @@ class DixonColes:
     points under the pool's scoring rules.
     """
 
-    def __init__(self, df, decay_lambda=0.2, regularization=0.0010):
+    def __init__(self, df, decay_lambda=0.2, regularization=0.0010, goal_inflation=1.15):
         """
         Parameters
         ----------
@@ -140,6 +140,7 @@ class DixonColes:
         self.team_index   = None
         self.n_teams      = None
         self.fitted_params = None
+        self.goal_inflation = goal_inflation
 
     # ------------------------------------------------------------------
     # Fitting
@@ -300,6 +301,8 @@ class DixonColes:
         away_team = self._resolve_team(away_team)
 
         lh, la = self._get_lambda(home_team, away_team, neutral)
+        lh     = lh * self.goal_inflation
+        la     = la * self.goal_inflation
         rho    = self.fitted_params[2 * self.n_teams + 1]
 
         matrix = np.zeros((max_goals, max_goals))

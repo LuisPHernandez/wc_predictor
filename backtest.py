@@ -104,7 +104,7 @@ def run_backtest(
     wc_year,
     decay_lambda=DECAY_LAMBDA,
     training_years=TRAINING_YEARS,
-    alpha=1.0,
+    alpha=0.30,
 ):
     """
     Runs the full backtest for a single WC year.
@@ -149,7 +149,11 @@ def run_backtest(
     odds_lookup = None
 
     if alpha < 1.0:
-        odds_lookup = load_wc_odds_lookup(wc_year)
+        try:
+            odds_lookup = load_wc_odds_lookup(wc_year)
+        except (KeyError, FileNotFoundError):
+            print(f"  No odds available for {wc_year} — running pure model")
+            alpha = 1.0
 
     model_preds = []
     for row in games.itertuples():
@@ -216,6 +220,41 @@ def run_backtest(
     else:
         print("No pool predictions available for this year — model score only")
 
+    if user_ranking is not None and pool['predictions'] is not None:
+        top_user_id = user_ranking.iloc[0]['user_id']
+        top_user_preds = (
+            pool['predictions'][pool['predictions']['user_id'] == top_user_id]
+            [['game_id', 'score1', 'score2']]
+            .rename(columns={'score1': 'top_pred_home', 'score2': 'top_pred_away'})
+        )
+        model_preds_df = model_preds_df.merge(top_user_preds, on='game_id', how='left')
+
+        has_pred = model_preds_df['top_pred_home'].notna()
+
+        model_preds_df.loc[has_pred, 'top_prediction'] = (
+            model_preds_df.loc[has_pred, 'top_pred_home'].astype(int).astype(str) + '-' +
+            model_preds_df.loc[has_pred, 'top_pred_away'].astype(int).astype(str)
+        )
+        model_preds_df['top_points_earned'] = model_preds_df.apply(
+            lambda r: points_for_prediction(
+                int(r['top_pred_home']), int(r['top_pred_away']),
+                int(r['score1']),        int(r['score2']),
+            ) if pd.notna(r['top_pred_home']) else None,
+            axis=1
+        )
+        model_preds_df['point_diff'] = (
+            model_preds_df['points_earned'] - model_preds_df['top_points_earned']
+        )
+        print(f"\nTop user: {top_user_id} ({int(user_ranking.iloc[0]['total_points'])} pts)")
+        print(f"Model vs top user per game:")
+        print(
+            model_preds_df[[
+                'team1', 'team2', 'prediction', 'top_prediction',
+                'actual', 'points_earned', 'top_points_earned', 'point_diff'
+            ]].to_string(index=False)
+        )
+        model_preds_df['top_user_id'] = top_user_id
+
     return {
         'year':         wc_year,
         'model_points': model_points,
@@ -264,12 +303,6 @@ def run_all_backtests(years=None, decay_lambda=DECAY_LAMBDA):
                     if r['model_rank'] else 'N/A')
         print(f"{r['year']:<6} {r['model_points']:<8} {r['n_games']:<7} "
               f"{rank_str:<6} {r['n_users']:<7} {pct_str:<8}")
-
-    # 2014 breakdown
-    for r in results:
-        if r['year'] == 2014:
-            print("\n2014 GAME-BY-GAME")
-            print(r['model_preds'][['team1','team2','prediction','actual','points_earned']].to_string(index=False))
 
     return results
 
