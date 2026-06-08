@@ -48,7 +48,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 KAGGLE_PATH = PROJECT_ROOT / "data" / "kaggle" / "results.csv"
 POOL_PATH   = PROJECT_ROOT / "data" / "pool"
-OUTPUT_PATH = PROJECT_ROOT / "wc_analysis_k115.csv"
+OUTPUT_PATH = PROJECT_ROOT / "wc_analysis_rho.csv"
 
 # ---------------------------------------------------------------------------
 # Hyperparameters  (current production values from handoff doc)
@@ -146,7 +146,7 @@ for year in WC_YEARS:
         kaggle_df,
         decay_lambda=DECAY_LAMBDA,
         regularization=REGULARIZATION,
-        goal_inflation=1.15,
+        goal_inflation=1,
     )
     model.fit()
 
@@ -182,6 +182,12 @@ for year in WC_YEARS:
         # -------------------------------------------------------------------
         matrix, lh, la = model.score_matrix(home, away, neutral=True)
         model_probs     = outcome_probs_from_matrix(matrix)
+
+        rho = float(
+            model.fitted_params[
+                2 * model.n_teams + 1
+            ]
+        )
 
         # -------------------------------------------------------------------
         # Disagreement signals (only meaningful when we have book odds)
@@ -234,6 +240,7 @@ for year in WC_YEARS:
             # Model expected goals (useful for future lambda-blending research)
             "lambda_home": round(lh, 4),
             "lambda_away": round(la, 4),
+            "rho": round(rho, 6),
 
             # Bookmaker probabilities (Shin-adjusted)
             "book_home": round(book_probs["home"], 6) if book_probs else np.nan,
