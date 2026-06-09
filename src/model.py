@@ -4,6 +4,23 @@ from scipy.stats import poisson # pyrefly: ignore [missing-import]
 
 from src.scoring import points_for_prediction
 
+# ============================================================
+# PRODUCTION PARAMETERS
+# ============================================================
+
+PRODUCTION_ALPHA = 0.35
+
+PRODUCTION_GOAL_BLEND_BETA = 0.30
+
+PRODUCTION_K_LOW = 1.12
+PRODUCTION_K_HIGH = 1.08
+
+PRODUCTION_K_LOW_LAMBDA = 2.0
+PRODUCTION_K_HIGH_LAMBDA = 3.5
+
+DECAY_LAMBDA = 0.2
+REGULARIZATION = 0.0010
+
 def outcome_probs_from_matrix(matrix):
     """
     Computes home/draw/away probabilities from a score matrix.
@@ -45,7 +62,7 @@ def normalize_matrix(matrix):
 
     return matrix / total
 
-def blend_matrix_outcomes(matrix, bookmaker_probs, alpha):
+def blend_matrix_outcomes(matrix, bookmaker_probs, alpha=PRODUCTION_ALPHA):
     """
     Blends Dixon-Coles outcome probabilities with bookmaker probabilities
     while preserving the model's scoreline structure.
@@ -120,7 +137,7 @@ class DixonColes:
     points under the pool's scoring rules.
     """
 
-    def __init__(self, df, decay_lambda=0.2, regularization=0.0010, goal_inflation=1.15):
+    def __init__(self, df, decay_lambda=DECAY_LAMBDA, regularization=REGULARIZATION, goal_blend_beta=PRODUCTION_GOAL_BLEND_BETA):
         """
         Parameters
         ----------
@@ -140,7 +157,7 @@ class DixonColes:
         self.team_index   = None
         self.n_teams      = None
         self.fitted_params = None
-        self.goal_inflation = goal_inflation
+        self.goal_blend_beta = goal_blend_beta
 
     # ------------------------------------------------------------------
     # Fitting
@@ -287,7 +304,7 @@ class DixonColes:
     # Prediction
     # ------------------------------------------------------------------
 
-    def score_matrix(self, home_team, away_team, neutral=True, max_goals=8):
+    def score_matrix(self, home_team, away_team, neutral=True, max_goals=8, market_total_goals=None):
         """
         Returns a (max_goals x max_goals) matrix where entry [i,j]
         is the probability of home_team scoring i, away_team scoring j.
@@ -300,10 +317,60 @@ class DixonColes:
         home_team = self._resolve_team(home_team)
         away_team = self._resolve_team(away_team)
 
-        lh, la = self._get_lambda(home_team, away_team, neutral)
+        lh, la = self._get_lambda(
+            home_team,
+            away_team,
+            neutral,
+        )
 
-        lh     = lh * self.goal_inflation
-        la     = la * self.goal_inflation
+        model_total = lh + la
+
+        if market_total_goals is not None:
+
+            blend_total = (
+                self.goal_blend_beta * model_total
+                +
+                (1 - self.goal_blend_beta)
+                * market_total_goals
+            )
+
+            home_ratio = lh / model_total
+            away_ratio = la / model_total
+
+            lh = blend_total * home_ratio
+            la = blend_total * away_ratio
+
+        total = lh + la
+
+        LOW_K = PRODUCTION_K_LOW
+        HIGH_K = PRODUCTION_K_HIGH
+
+        if total <= PRODUCTION_K_LOW_LAMBDA:
+            k = LOW_K
+
+        elif total >= PRODUCTION_K_HIGH_LAMBDA:
+            k = HIGH_K
+
+        else:
+
+            frac = (
+                (total - PRODUCTION_K_LOW_LAMBDA)
+                /
+                (PRODUCTION_K_HIGH_LAMBDA - PRODUCTION_K_LOW_LAMBDA)
+            )
+
+            k = (
+                LOW_K
+                +
+                frac * (
+                    HIGH_K
+                    -
+                    LOW_K
+                )
+            )
+
+        lh *= k
+        la *= k
         
         rho    = self.fitted_params[2 * self.n_teams + 1]
 
@@ -324,8 +391,9 @@ class DixonColes:
         away_team,
         neutral=True,
         max_goals=8,
+        market_total_goals=None,
         bookmaker_probs=None,
-        alpha=1.0,
+        alpha=PRODUCTION_ALPHA
     ):
         """
         Finds the scoreline prediction that maximizes expected points
@@ -342,8 +410,13 @@ class DixonColes:
           lambda_home — expected goals home
           lambda_away — expected goals away
         """
-        matrix, lh, la = self.score_matrix(home_team, away_team,
-                                           neutral, max_goals)
+        matrix, lh, la = self.score_matrix(
+            home_team,
+            away_team,
+            neutral,
+            max_goals,
+            market_total_goals=market_total_goals,
+        )
 
         if bookmaker_probs is not None:
             matrix = blend_matrix_outcomes(

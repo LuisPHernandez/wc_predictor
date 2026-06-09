@@ -308,6 +308,7 @@ def name_to_confederation(name):
 ODDS_NAME_TO_FIFA = {
     'USA':                  'United States',
     'Bosnia & Herzegovina': 'Bosnia and Herzegovina',
+    'Bosnia-Herzegovina':   'Bosnia and Herzegovina',
 
     # 2006 / 2010 Spanish names
     'Alemania':             'Germany',

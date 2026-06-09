@@ -5,7 +5,10 @@ from multiprocessing import Pool as ProcessPool
 from src.loader import load_kaggle_data, load_pool_data, get_wc_teams
 from src.model import DixonColes
 from src.scoring import points_for_prediction
-from src.odds_loader import load_wc_odds_lookup
+from src.odds_loader import (
+    load_wc_odds_lookup,
+    load_wc_expected_goals_lookup,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 KAGGLE_PATH = PROJECT_ROOT / 'data' / 'kaggle' / 'results.csv'
@@ -139,7 +142,8 @@ def run_backtest(
     print(f"Training matches: {len(kaggle_df)}")
 
     # --- Fit model ---
-    model = DixonColes(kaggle_df, decay_lambda=decay_lambda, regularization=REGULARIZATION)
+    model = DixonColes(kaggle_df, decay_lambda=decay_lambda, regularization=REGULARIZATION, goal_blend_beta=0.30,)
+    print(model.goal_blend_beta)
     model.fit()
 
     # --- Generate model predictions for every game ---
@@ -147,10 +151,16 @@ def run_backtest(
     scores = pool['scores']
 
     odds_lookup = None
+    expected_goals_lookup = None
 
     if alpha < 1.0:
         try:
             odds_lookup = load_wc_odds_lookup(wc_year)
+            expected_goals_lookup = (
+                load_wc_expected_goals_lookup(
+                    wc_year
+                )
+            )
         except (KeyError, FileNotFoundError):
             print(f"  No odds available for {wc_year} — running pure model")
             alpha = 1.0
@@ -158,14 +168,23 @@ def run_backtest(
     model_preds = []
     for row in games.itertuples():
         bookmaker_probs = None
+        market_total_goals = None
 
         if odds_lookup is not None:
             bookmaker_probs = odds_lookup.get(row.game_id)
+
+        if expected_goals_lookup is not None:
+            market_total_goals = (
+                expected_goals_lookup.get(
+                    row.game_id
+                )
+            )
             
         pred = model.predict(
             row.team1,
             row.team2,
             neutral=True,
+            market_total_goals=market_total_goals,
             bookmaker_probs=bookmaker_probs,
             alpha=alpha,
         )

@@ -17,7 +17,10 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.loader import load_pool_data, get_wc_teams, build_competition_weights, build_confederation_weights, load_kaggle_base_data
 from src.model import DixonColes
 from src.scoring import points_for_prediction
-from src.odds_loader import load_wc_odds_lookup
+from src.odds_loader import (
+    load_wc_odds_lookup,
+    load_wc_expected_goals_lookup,
+)
 
 KAGGLE_PATH = PROJECT_ROOT / 'data' / 'kaggle' / 'results.csv'
 POOL_PATH   = PROJECT_ROOT / 'data' / 'pool'
@@ -26,6 +29,7 @@ POOL_CACHE = None
 MEAN_USER_CACHE = None
 BASE_KAGGLE_CACHE = None
 ODDS_CACHE = None
+EXPECTED_GOALS_CACHE = None
 
 WC_START_DATES = {
     2002: '2002-05-31',
@@ -37,7 +41,7 @@ WC_START_DATES = {
 }
 
 # Years with pool predictions to score against
-TUNING_YEARS = [2006, 2010, 2018, 2022]
+TUNING_YEARS = [2014, 2018, 2022]
 
 # Best hyperparameters found with hyperparameter_tune.py and weights found with competition_tune.py and confederation_tune.py
 DECAY_LAMBDA   = 0.2
@@ -57,17 +61,13 @@ OFC      = 0.90
 # Alpha search space
 SEARCH_SPACE = {
     "alpha": [
-        0.00,
-        0.05,
-        0.10,
-        0.15,
-        0.20,
+        0.1,
+        0.2,
         0.25,
-        0.30,
+        0.3,
         0.35,
-        0.40,
-        0.45,
-        0.50,
+        0.4,
+        0.5,
     ]
 }
 
@@ -107,7 +107,7 @@ def compute_mean_user_points(year):
 
     return total_pts / n_users
 
-def run_single_year(year, alpha, pool_cache, mean_user_cache):
+def run_single_year(year, alpha, pool_cache):
     """
     Fits the model and scores it for a single WC year.
     Returns the model's margin over the mean user.
@@ -132,6 +132,7 @@ def run_single_year(year, alpha, pool_cache, mean_user_cache):
     actuals = scores.set_index('game_id')[['score1', 'score2']].to_dict('index')
 
     odds_lookup = ODDS_CACHE[year]
+    expected_goals_lookup = EXPECTED_GOALS_CACHE[year]
 
     model_points = 0
     for row in games.itertuples():
@@ -139,10 +140,17 @@ def run_single_year(year, alpha, pool_cache, mean_user_cache):
             row.game_id
         )
 
+        market_total_goals = (
+            expected_goals_lookup.get(
+                row.game_id
+            )
+        )
+
         pred = model.predict(
             row.team1,
             row.team2,
             neutral=True,
+            market_total_goals=market_total_goals,
             bookmaker_probs=bookmaker_probs,
             alpha=alpha,
         )
@@ -155,9 +163,8 @@ def run_single_year(year, alpha, pool_cache, mean_user_cache):
             int(actual['score1']), int(actual['score2'])
         )
 
-    margin = model_points - mean_user_cache[year]
-    elapsed  = time.time() - t0
-    return model_points, margin, elapsed
+    elapsed = time.time() - t0
+    return model_points, elapsed
 
 def init_worker():
     """
@@ -168,14 +175,10 @@ def init_worker():
     global MEAN_USER_CACHE
     global BASE_KAGGLE_CACHE
     global ODDS_CACHE
+    global EXPECTED_GOALS_CACHE
 
     POOL_CACHE = {
         year: load_pool_data(POOL_PATH, year)
-        for year in TUNING_YEARS
-    }
-
-    MEAN_USER_CACHE = {
-        year: compute_mean_user_points(year)
         for year in TUNING_YEARS
     }
 
@@ -183,6 +186,11 @@ def init_worker():
 
     ODDS_CACHE = {
         year: load_wc_odds_lookup(year)
+        for year in TUNING_YEARS
+    }
+
+    EXPECTED_GOALS_CACHE = {
+        year: load_wc_expected_goals_lookup(year)
         for year in TUNING_YEARS
     }
 
@@ -265,33 +273,31 @@ def init_worker():
 def run_combo(args):
     alpha = args
 
-    year_margins = {}
     year_points  = {}
     year_times   = {}
 
     for year in TUNING_YEARS:
-        pts, margin, elapsed = run_single_year(
+        pts, elapsed = run_single_year(
             year,
             alpha,
             POOL_CACHE, 
-            MEAN_USER_CACHE
         )
-        year_margins[year] = margin
         year_points[year]  = pts
         year_times[year]   = elapsed
 
-    avg_margin = np.mean(list(year_margins.values()))
+    total_points = sum(
+        year_points.values()
+    )
     combo_time = sum(year_times.values())
 
     row = {
         "alpha": alpha,
-        "avg_margin": avg_margin,
+        "total_points": total_points,
         "combo_time_s": round(combo_time, 1),
     }
 
     for year in TUNING_YEARS:
         row[f'pts_{year}']    = year_points[year]
-        row[f'margin_{year}'] = year_margins[year]
         row[f'time_{year}']   = round(year_times[year], 1)
 
     return row
@@ -303,12 +309,6 @@ def run_tuning():
     computes the average margin over mean user.
     Saves results to confederation_tune_results.csv as it goes.
     """
-    mean_user_cache  = {year: compute_mean_user_points(year) for year in TUNING_YEARS}
-
-    print("\nMean user points per year:")
-    for year, pts in mean_user_cache.items():
-        print(f"  {year}: {pts:.1f}")
-
     # Build all combinations
     total = len(
         SEARCH_SPACE["alpha"]
@@ -349,29 +349,39 @@ def run_tuning():
             print(
                 f"[{len(results)}/{total}] "
                 f"alpha={row['alpha']:.2f} → "
-                f"avg_margin={row['avg_margin']:+.2f} "
+                f"total_points={row['total_points']} "
                 f"({row['combo_time_s']:.0f}s)"
             )
 
             # Save after every completed combo
             pd.DataFrame(results).sort_values(
-                'avg_margin', ascending=False
+                'total_points',
+                ascending=False
             ).to_csv(RESULTS_PATH, index=False)
 
-    results_df = pd.DataFrame(results).sort_values('avg_margin', ascending=False)
+    results_df = pd.DataFrame(results).sort_values(
+        'total_points',
+        ascending=False
+    )
 
     print(f"\n{'='*70}")
     print("TOP 10 COMBINATIONS")
     print(f"{'='*70}")
     print(results_df.head(10)[[
         'alpha',
-        'avg_margin'
+        'total_points',
+        'pts_2014',
+        'pts_2018',
+        'pts_2022',
     ]].to_string(index=False))
 
     best = results_df.iloc[0]
     print("\nBest combination:")
     print(f"  alpha:      {best['alpha']:.2f}")
-    print(f"  avg_margin: {best['avg_margin']:+.2f}")
+    print(
+        f"  total_points: "
+        f"{int(best['total_points'])}"
+    )
 
     return results_df
 

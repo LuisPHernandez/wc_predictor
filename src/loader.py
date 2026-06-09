@@ -2,7 +2,25 @@ import pandas as pd
 import numpy as np # pyrefly: ignore [missing-import] 
 from src.mappings import code_to_name, FIFA_NAME_TO_CONFEDERATION
 
-# Default weights
+# ============================================================
+# PRODUCTION WEIGHTS
+#
+# Selected via historical World Cup backtesting.
+#
+# Competition:
+#   Continental = 1.00
+#   Qualifier   = 0.50
+#   Regional    = 0.30
+#   Friendly    = 0.30
+#
+# Confederation:
+#   CONMEBOL = 1.00
+#   UEFA     = 1.00
+#   CAF      = 1.10
+#   CONCACAF = 1.05
+#   AFC      = 0.95
+#   OFC      = 0.90
+# ============================================================
 DEFAULT_COMPETITION_WEIGHTS = {
     'FIFA World Cup':                       1.0,
     'UEFA Euro':                            1.0,
@@ -25,12 +43,12 @@ DEFAULT_COMPETITION_WEIGHTS = {
     'Friendly':                             0.3,
 }
 DEFAULT_CONFEDERATION_WEIGHTS = {
-    "CONMEBOL": 1.20,
-    "UEFA":     1.15,
-    "CAF":      1.05,
+    "CONMEBOL": 1.00,
+    "UEFA":     1.00,
+    "CAF":      1.10,
     "CONCACAF": 1.05,
-    "AFC":      1.00,
-    "OFC":      0.95,
+    "AFC":      0.95,
+    "OFC":      0.90,
 }
 
 # Builders with tuned weights as their defaults

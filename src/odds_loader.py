@@ -10,6 +10,19 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.mappings import code_to_name, ODDS_NAME_TO_FIFA
 
+# ============================================================
+# PRODUCTION ODDS SOURCES
+#
+# 1X2 odds:
+#   load_wc_odds_lookup()
+#
+# Expected goals:
+#   load_wc_expected_goals_lookup()
+#
+# Production model:
+#   alpha uses 1X2 probabilities
+#   beta uses expected goals
+# ============================================================
 ODDS_PATH  = PROJECT_ROOT / "data" / "odds" / 'WorldCup2026.xlsx'
 CSV_ODDS_YEARS = {
     2006: PROJECT_ROOT / "data" / "odds" / "2006_odds.csv",
@@ -21,6 +34,12 @@ WC_SHEETS = {
     2014: 'WorldCup2014',
     2018: 'WorldCup2018',
     2022: 'WorldCup2022',
+}
+
+WC_EXPECTED_GOALS_CSV = {
+    2014: PROJECT_ROOT / "data" / "odds" / "2014wc_expected_goals.csv",
+    2018: PROJECT_ROOT / "data" / "odds" / "2018wc_expected_goals.csv",
+    2022: PROJECT_ROOT / "data" / "odds" / "2022wc_expected_goals.csv",
 }
 
 def load_wc_odds_lookup_csv(year):
@@ -241,6 +260,98 @@ def load_wc_odds_lookup(year, path=ODDS_PATH):
             print("   ", m)
 
     return odds_lookup
+
+def load_wc_expected_goals_lookup(year):
+    """
+    Returns:
+
+    {
+        game_id: expected_goals
+    }
+
+    Expected goals are derived from bookmaker O/U lines
+    and are used by the production beta blend.
+
+    Production:
+        model_total =
+            beta * model_total
+            +
+            (1 - beta) * market_total
+    """
+    path = WC_EXPECTED_GOALS_CSV[year]
+
+    ou = pd.read_csv(path)
+
+    ou["home_team"] = (
+        ou["home_team"]
+        .astype(str)
+        .str.strip()
+        .replace(ODDS_NAME_TO_FIFA)
+    )
+
+    ou["away_team"] = (
+        ou["away_team"]
+        .astype(str)
+        .str.strip()
+        .replace(ODDS_NAME_TO_FIFA)
+    )
+
+    pool = load_pool_data(
+        POOL_PATH,
+        year,
+    )
+
+    games = pool["games"]
+
+    game_lookup = {}
+
+    for row in games.itertuples():
+
+        game_lookup[
+            (
+                row.team1,
+                row.team2,
+            )
+        ] = row.game_id
+
+    expected_goals_lookup = {}
+
+    missing = []
+
+    for row in ou.itertuples():
+
+        key = (
+            row.home_team,
+            row.away_team,
+        )
+
+        game_id = game_lookup.get(key)
+
+        if game_id is None:
+
+            missing.append(key)
+            continue
+
+        expected_goals_lookup[
+            game_id
+        ] = float(row.ou_lines)
+
+    print(
+        f"{year}: matched "
+        f"{len(expected_goals_lookup)} expected-goals rows"
+    )
+
+    if missing:
+
+        print(
+            f"{year}: WARNING "
+            f"{len(missing)} unmatched expected-goals rows"
+        )
+
+        for m in missing[:10]:
+            print("   ", m)
+
+    return expected_goals_lookup
 
 def _resolve_team(name):
     return ODDS_NAME_TO_FIFA.get(name, name)
