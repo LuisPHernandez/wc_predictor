@@ -1,65 +1,65 @@
-home_team,away_team,ou_lines
-Francia,Croacia,2.0
-Bélgica,Inglaterra,3.0
-Croacia,Inglaterra,2.0
-Francia,Bélgica,2.5
-Rusia,Croacia,2.0
-Suecia,Inglaterra,2.0
-Brasil,Bélgica,2.5
-Uruguay,Francia,2.0
-Colombia,Inglaterra,2.0
-Suecia,Suiza,2.0
-Bélgica,Japón,2.5
-Brasil,México,2.5
-Croacia,Dinamarca,2.0
-España,Rusia,2.5
-Uruguay,Portugal,2.0
-Francia,Argentina,2.0
-Inglaterra,Bélgica,2.0
-Panamá,Túnez,2.5
-Senegal,Colombia,2.5
-Japón,Polonia,2.5
-Serbia,Brasil,3.0
-Suiza,Costa Rica,2.5
-Corea del Sur,Alemania,3.0
-México,Suecia,2.5
-Nigeria,Argentina,3.0
-Islandia,Croacia,2.5
-Australia,Perú,2.5
-Dinamarca,Francia,2.0
-España,Marruecos,3.0
-Irán,Portugal,2.5
-Arabia Saudí,Egipto,2.5
-Uruguay,Rusia,2.0
-Polonia,Colombia,2.5
-Japón,Senegal,2.0
-Inglaterra,Panamá,2.5
-Alemania,Suecia,3.0
-Corea del Sur,México,2.5
-Bélgica,Túnez,2.5
-Serbia,Suiza,2.0
-Nigeria,Islandia,2.0
-Brasil,Costa Rica,2.5
-Argentina,Croacia,2.0
-Francia,Perú,2.0
-Dinamarca,Australia,2.0
-Irán,España,2.5
-Uruguay,Arabia Saudí,3.0
-Portugal,Marruecos,2.5
-Rusia,Egipto,2.0
-Polonia,Senegal,2.0
-Colombia,Japón,2.0
-Túnez,Inglaterra,2.5
-Bélgica,Panamá,3.0
-Suecia,Corea del Sur,2.0
-Brasil,Suiza,2.5
-Alemania,México,3.0
-Costa Rica,Serbia,2.0
-Croacia,Nigeria,2.5
-Perú,Dinamarca,2.0
-Argentina,Islandia,2.5
-Francia,Australia,3.0
-Portugal,España,2.5
-Marruecos,Irán,2.0
-Egipto,Uruguay,2.0
-Rusia,Arabia Saudí,2.5
+home_team,away_team,ou_lines,avg_over,avg_under,implied_xg
+Francia,Croacia,2.0,2.05,1.88,2.587276153256499
+Bélgica,Inglaterra,3.0,2.05,1.88,3.5698942851034885
+Croacia,Inglaterra,2.0,2.15,1.8,2.49808749329873
+Francia,Bélgica,2.5,2.095,1.7575,2.500040506003
+Rusia,Croacia,2.0,1.86,2.07,2.7839746810262733
+Suecia,Inglaterra,2.0,1.78,2.19,2.8896457989400224
+Brasil,Bélgica,2.5,1.7975,2.0275,2.7979829358561106
+Uruguay,Francia,2.0,1.95,1.97,2.684418893426545
+Colombia,Inglaterra,2.0,1.85,2.09,2.799624714091542
+Suecia,Suiza,2.0,1.92,2.0,2.715661043547036
+Bélgica,Japón,2.5,1.765,2.085,2.846508397616197
+Brasil,México,2.5,1.845,1.9925,2.752793243931508
+Croacia,Dinamarca,2.0,1.81,2.14,2.8474172894236833
+España,Rusia,2.5,1.9175,1.9125,2.671414167963693
+Uruguay,Portugal,2.0,2.15,1.8,2.49808749329873
+Francia,Argentina,2.0,1.8,2.15,2.8582029609546846
+Inglaterra,Bélgica,2.0,1.81,2.14,2.8474172894236833
+Panamá,Túnez,2.5,2.0625,1.78,2.5275731532981403
+Senegal,Colombia,2.5,1.9925,1.845,2.5968596040198064
+Japón,Polonia,2.5,2.16,1.72,2.4500018107989368
+Serbia,Brasil,3.0,2.14,1.81,3.4762223149796223
+Suiza,Costa Rica,2.5,2.22,1.675,2.3990327083409784
+Corea del Sur,Alemania,3.0,1.7,2.2,3.98759479575611
+México,Suecia,2.5,2.0975,1.765,2.503006744431725
+Nigeria,Argentina,3.0,1.97,1.95,3.659915373589345
+Islandia,Croacia,2.5,2.08,1.77,2.5138718393475767
+Australia,Perú,2.5,2.0775,1.7725,2.5164110371272255
+Dinamarca,Francia,2.0,1.85,2.09,2.799624714091542
+España,Marruecos,3.0,1.89,2.04,3.763813863772988
+Irán,Portugal,2.5,1.965,1.87,2.6241418395147056
+Arabia Saudí,Egipto,2.5,2.2475,1.6625,2.3805131927507155
+Uruguay,Rusia,2.0,1.69,2.23,2.96479993002932
+Polonia,Colombia,2.5,2.22,1.675,2.3990327083409784
+Japón,Senegal,2.0,1.99,1.93,2.6431446487957384
+Inglaterra,Panamá,2.5,1.84,2.0,2.7594859428652443
+Alemania,Suecia,3.0,2.18,1.78,3.4359947947292735
+Corea del Sur,México,2.5,2.005,1.8375,2.586612094642233
+Bélgica,Túnez,2.5,1.825,2.0175,2.7770126892497884
+Serbia,Suiza,2.0,1.81,2.14,2.8474172894236833
+Nigeria,Islandia,2.0,1.99,1.93,2.6431446487957384
+Brasil,Costa Rica,2.5,1.835,2.005,2.7648905663301164
+Argentina,Croacia,2.0,1.7,2.21,2.9486934311449153
+Francia,Perú,2.0,1.78,2.18,2.8847715599857007
+Dinamarca,Australia,2.0,1.83,2.11,2.8209825893942884
+Irán,España,2.5,1.7525,2.11,2.866639383226432
+Uruguay,Arabia Saudí,3.0,2.11,1.83,3.5050980014294337
+Portugal,Marruecos,2.5,2.135,1.735,2.469425496067545
+Rusia,Egipto,2.0,1.81,2.04,2.797164502299167
+Polonia,Senegal,2.0,1.8,2.06,2.8131656101600866
+Colombia,Japón,2.0,1.9,2.07,2.761880952809521
+Túnez,Inglaterra,2.5,2.235,1.675,2.3927225646717427
+Bélgica,Panamá,3.0,2.06,1.8,3.513702619325617
+Suecia,Corea del Sur,2.0,1.95,1.89,2.6425030680405106
+Brasil,Suiza,2.5,1.9925,1.86,2.6049140694384065
+Alemania,México,3.0,2.07,1.9,3.5709149938418903
+Costa Rica,Serbia,2.0,1.81,2.04,2.797164502299167
+Croacia,Nigeria,2.5,2.2375,1.68,2.3944667386759306
+Perú,Dinamarca,2.0,2.16,1.73,2.455530384418735
+Argentina,Islandia,2.5,1.81,2.045,2.7997213737727216
+Francia,Australia,3.0,2.17,1.72,3.4023626242380067
+Portugal,España,2.5,2.28,1.66,2.365757373327559
+Marruecos,Irán,2.0,2.22,1.69,2.407406236797599
+Egipto,Uruguay,2.0,1.68,2.24,2.9760757473122124
+Rusia,Arabia Saudí,2.5,2.2075,1.69,2.4127210047837275

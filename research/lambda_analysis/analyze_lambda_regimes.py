@@ -16,8 +16,9 @@ wc_analysis_rho.csv                    — historical WC dataset (2014-2022)
 data/odds/2014wc_expected_goals.csv    — market O/U lines per match
 data/odds/2018wc_expected_goals.csv
 data/odds/2022wc_expected_goals.csv
-data/odds/2026wc_expected_goals.csv    — market O/U lines for 2026
 data/wc2026_lambda_check.csv           — model lambda predictions for 2026
+data/odds/2026wc_expected_goals.csv    — market O/U lines for 2026
+                                         (ou_lines column only; no implied_xg)
 
 Outputs  (all written to lambda_analysis/)
 ------------------------------------------
@@ -39,16 +40,19 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
-
-from src.mappings import ODDS_NAME_TO_FIFA
+import sys
 
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-WC_PATH = PROJECT_ROOT / "wc_analysis_rho.csv"
+WC_PATH = PROJECT_ROOT / "data" / "analysis" / "wc_analysis_rho.csv"
+
+from src.mappings import ODDS_NAME_TO_FIFA
 
 HIST_ODDS_PATHS = {
     2014: PROJECT_ROOT / "data" / "odds" / "2014wc_expected_goals.csv",
@@ -80,16 +84,15 @@ def normalize_teams(df):
 
 def summarize(sub):
     """Computes lambda, market O/U, actual goal averages and derived k values."""
-    avg_model  = sub["lambda_total"].mean()
-    avg_market = sub["ou_lines"].mean()
-    avg_actual = sub["actual_goals"].mean()
     return pd.Series({
         "matches":          len(sub),
-        "avg_model_lambda": round(avg_model,  3),
-        "avg_market_ou":    round(avg_market, 3),
-        "avg_actual_goals": round(avg_actual, 3),
-        "model_k":          round(avg_actual / avg_model,  3),
-        "market_k":         round(avg_actual / avg_market, 3),
+        "avg_model_lambda": round(sub["lambda_total"].mean(), 3),
+        "avg_market_ou":    round(sub["ou_lines"].mean(), 3),
+        "avg_market_xg":    round(sub["implied_xg"].mean(), 3),
+        "avg_actual_goals": round(sub["actual_goals"].mean(), 3),
+        "model_k":          round(sub["actual_goals"].mean() / sub["lambda_total"].mean(), 3),
+        "market_ou_k":      round(sub["actual_goals"].mean() / sub["ou_lines"].mean(), 3),
+        "market_xg_k":      round(sub["actual_goals"].mean() / sub["implied_xg"].mean(), 3),
     })
 
 # ---------------------------------------------------------------------------
@@ -122,12 +125,14 @@ for year, path in HIST_ODDS_PATHS.items():
     o = pd.read_csv(path)
     o = normalize_teams(o)
     o["year"] = year
-    odds_frames.append(o[["year", "home_team", "away_team", "ou_lines"]])
-
+    odds_frames.append(
+        o[["year", "home_team", "away_team", "ou_lines", "implied_xg"]]
+    )
 hist_odds = pd.concat(odds_frames, ignore_index=True)
 
 hist = df.merge(hist_odds, on=["year", "home_team", "away_team"], how="inner")
-hist["market_gap"]  = hist["lambda_total"] - hist["ou_lines"]
+hist["market_gap_line"] = hist["lambda_total"] - hist["ou_lines"]
+hist["market_gap_xg"]   = hist["lambda_total"] - hist["implied_xg"]
 hist["fine_bucket"] = pd.cut(
     hist["lambda_total"],
     bins=[0, 2.0, 2.5, 3.0, 3.5, 100],
@@ -135,6 +140,11 @@ hist["fine_bucket"] = pd.cut(
 )
 
 print(f"\nMatched {len(hist)} of {len(df)} historical rows to O/U odds")
+
+hist["xg_minus_line"] = hist["implied_xg"] - hist["ou_lines"]
+
+section("2b. IMPLIED XG VS LINE")
+print(hist["xg_minus_line"].describe())
 
 # ---------------------------------------------------------------------------
 # 3. Bucket summary
@@ -147,6 +157,18 @@ bucket_summary = hist.groupby("bucket", observed=False).apply(
 )
 print(f"\n{bucket_summary.to_string()}")
 bucket_summary.to_csv(OUTDIR / "bucket_summary.csv")
+
+section("3b. LINE VS IMPLIED XG")
+
+bucket_xg = (
+    hist.groupby("bucket")
+    .agg(
+        avg_line=("ou_lines", "mean"),
+        avg_xg=("implied_xg", "mean"),
+        avg_delta=("xg_minus_line", "mean"),
+    )
+)
+print(bucket_xg.round(3))
 
 # ---------------------------------------------------------------------------
 # 4. Year summary
@@ -166,7 +188,7 @@ year_summary.to_csv(OUTDIR / "year_summary.csv")
 
 section("5. MODEL − MARKET GAP BY YEAR")
 
-gap_by_year = hist.groupby("year")["market_gap"].mean().round(4)
+gap_by_year = hist.groupby("year")["market_gap_xg"].mean().round(4)
 print(f"\n{gap_by_year.to_string()}")
 
 # ---------------------------------------------------------------------------
@@ -218,18 +240,19 @@ fine_summary = hist.groupby("fine_bucket", observed=False).apply(
 print(f"\n{fine_summary.to_string()}")
 
 section("7b. FINE BUCKET K VALUES")
-print(f"\n{fine_summary[['matches', 'model_k', 'market_k']].to_string()}")
+print(f"\n{fine_summary[['matches','model_k','market_ou_k','market_xg_k']].to_string()}")
 fine_summary.to_csv(OUTDIR / "fine_bucket_summary.csv")
 
 # ---------------------------------------------------------------------------
 # 8. Load 2026 lambdas and O/U odds
+#    NOTE: 2026 odds file has ou_lines only — no implied_xg column.
 # ---------------------------------------------------------------------------
 
 section("8. LOADING 2026 DATA")
 
 wc26 = pd.read_csv(LAMBDA_2026_PATH)
-wc26["home_team"] = wc26["home_team"].astype(str).str.strip()
-wc26["away_team"] = wc26["away_team"].astype(str).str.strip()
+wc26["home_team"]    = wc26["home_team"].astype(str).str.strip()
+wc26["away_team"]    = wc26["away_team"].astype(str).str.strip()
 wc26["lambda_total"] = wc26["lambda_home"] + wc26["lambda_away"]
 
 o26 = pd.read_csv(ODDS_2026_PATH)
@@ -238,9 +261,13 @@ o26 = normalize_teams(o26)
 print(f"\nLambda rows (2026): {len(wc26)}")
 print(f"O/U rows    (2026): {len(o26)}")
 
-wc26 = wc26.merge(o26[["home_team", "away_team", "ou_lines"]],
-                  on=["home_team", "away_team"], how="inner")
-wc26["market_gap"] = wc26["lambda_total"] - wc26["ou_lines"]
+# Merge ou_lines only — implied_xg is not available for 2026
+wc26 = wc26.merge(
+    o26[["home_team", "away_team", "ou_lines"]],
+    on=["home_team", "away_team"],
+    how="inner",
+)
+wc26["market_gap_line"] = wc26["lambda_total"] - wc26["ou_lines"]
 wc26["bucket"] = pd.cut(
     wc26["lambda_total"],
     bins=[0, 2.5, 3.0, 100],
@@ -249,8 +276,11 @@ wc26["bucket"] = pd.cut(
 
 print(f"Matched     (2026): {len(wc26)}")
 print(f"\nFirst 5 rows:")
-print(wc26[["home_team", "away_team", "lambda_total", "ou_lines", "market_gap"]]
-      .head().to_string(index=False))
+print(
+    wc26[["home_team", "away_team", "lambda_total", "ou_lines", "market_gap_line"]]
+    .head()
+    .to_string(index=False)
+)
 
 # ---------------------------------------------------------------------------
 # 9. 2026 market vs model
@@ -264,7 +294,7 @@ bucket26 = (
         matches=("bucket", "count"),
         avg_model=("lambda_total", "mean"),
         avg_market=("ou_lines", "mean"),
-        avg_gap=("market_gap", "mean"),
+        avg_gap=("market_gap_line", "mean"),   # gap vs O/U line (no xg for 2026)
     )
 )
 print(f"\n{bucket26.to_string()}")
@@ -287,6 +317,7 @@ print(f"""
 Historical 2014–2022:
   Avg model lambda  : {hist["lambda_total"].mean():.3f}
   Avg market O/U    : {hist["ou_lines"].mean():.3f}
+  Avg implied xG    : {hist["implied_xg"].mean():.3f}
   Avg actual goals  : {hist["actual_goals"].mean():.3f}
   Model k  (overall): {hist_model_k:.3f}
   Market k (overall): {hist_market_k:.3f}
@@ -294,11 +325,11 @@ Historical 2014–2022:
 2026 pre-tournament:
   Avg model lambda  : {wc26["lambda_total"].mean():.3f}
   Avg market O/U    : {wc26["ou_lines"].mean():.3f}
-  Avg model−market gap: {wc26["market_gap"].mean():.3f}
+  Avg model−market gap (vs line): {wc26["market_gap_line"].mean():.3f}
 
 Interpretation:
   The model predicts {wc26["lambda_total"].mean():.3f} goals/game for 2026 vs
-  a market O/U of {wc26["ou_lines"].mean():.3f} — a gap of {wc26["market_gap"].mean():+.3f}.
+  a market O/U of {wc26["ou_lines"].mean():.3f} — a gap of {wc26["market_gap_line"].mean():+.3f}.
   Historically, model k drops below 1.0 when lambda > 3.0 (model overshoots).
   A flat k=1.15 would OVERPREDICT goals for high-lambda 2026 games.
   Per-bucket k calibration is recommended.
@@ -310,8 +341,8 @@ Bucket share comparison:
 
 # Per-bucket k recommendation
 print("Per-bucket k recommendation for 2026 (from historical calibration):")
-print(f"\n  {'Bucket':12s}  {'Hist matches':>13}  {'Model k':>8}  {'Market k':>9}  {'Suggested action'}")
-print(f"  {'-'*12}  {'-'*13}  {'-'*8}  {'-'*9}  {'-'*25}")
+print(f"\n  {'Bucket':12s}  {'Hist matches':>13}  {'Model k':>8}  {'Market k':>9}  {'Market xg k':>12}  {'Suggested action'}")
+print(f"  {'-'*12}  {'-'*13}  {'-'*8}  {'-'*9}  {'-'*12}  {'-'*25}")
 for bucket, row in fine_summary.iterrows():
     if row["matches"] < 5:
         action = "insufficient data"
@@ -322,7 +353,8 @@ for bucket, row in fine_summary.iterrows():
     else:
         action = "neutral  → use k ≈ 1.00"
     print(f"  {str(bucket):12s}  {int(row['matches']):>13}  "
-          f"{row['model_k']:>8.3f}  {row['market_k']:>9.3f}  {action}")
+          f"{row['model_k']:>8.3f}  {row['market_ou_k']:>9.3f}  "
+          f"{row['market_xg_k']:>12.3f}  {action}")
 
 # ---------------------------------------------------------------------------
 # 11. Plots
@@ -361,14 +393,15 @@ fig.savefig(OUTDIR / "market_vs_model_2026.png", dpi=150)
 plt.close(fig)
 print(f"  Saved: market_vs_model_2026.png")
 
-# Plot 3: Fine bucket calibration — model vs market vs actual
+# Plot 3: Fine bucket calibration — model vs market vs actual (historical only)
 valid = fine_summary[fine_summary["matches"] >= 3]
 if len(valid) > 0:
     fig, ax = plt.subplots(figsize=(10, 6))
     x = np.arange(len(valid))
-    ax.plot(x, valid["avg_model_lambda"],  marker="o", label="Model lambda")
-    ax.plot(x, valid["avg_market_ou"],     marker="s", label="Market O/U")
-    ax.plot(x, valid["avg_actual_goals"],  marker="^", label="Actual goals")
+    ax.plot(x, valid["avg_model_lambda"], marker="o", label="Model lambda")
+    ax.plot(x, valid["avg_market_ou"],    marker="s", label="Market O/U")
+    ax.plot(x, valid["avg_market_xg"],    marker="d", label="Implied xG")
+    ax.plot(x, valid["avg_actual_goals"], marker="^", label="Actual goals")
     ax.set_xticks(x)
     ax.set_xticklabels(valid.index)
     ax.set_xlabel("Lambda bucket")

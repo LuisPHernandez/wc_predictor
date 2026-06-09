@@ -1,0 +1,4 @@
+year,matches,avg_model_lambda,avg_market_ou,avg_market_xg,avg_actual_goals,model_k,market_ou_k,market_xg_k
+2014,64.0,2.373,2.5,2.646,2.672,1.126,1.069,1.01
+2018,64.0,2.271,2.367,2.809,2.641,1.163,1.116,0.94
+2022,64.0,2.344,2.457,2.821,2.688,1.147,1.094,0.953
