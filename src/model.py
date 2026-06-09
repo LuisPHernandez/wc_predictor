@@ -200,7 +200,6 @@ class DixonColes:
         print(f"Iterations used: {result.nit}")
         print(f"Function evals used: {result.nfev}")
         print(f"Converged: {result.success}")
-        print(f"Stop reason: {result.message}")
         print(f"Final NLL: {result.fun:.4f}")
 
         self.fitted_params = result.x

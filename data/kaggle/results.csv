@@ -49290,6 +49290,92 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2026-06-01,Slovakia,Malta,2,1,Friendly,Dunajská Streda,Slovakia,FALSE
 2026-06-01,Turkey,North Macedonia,4,0,Friendly,Istanbul,Turkey,FALSE
 2026-06-01,Maldives,Afghanistan,0,1,Diamond Jubilee International Football Tournament,Malé,Maldives,FALSE
+2026-06-02,Croatia,Belgium,0,2,Friendly,Rijeka,Croatia,FALSE
+2026-06-02,Georgia,Romania,1,1,Friendly,Tbilisi,Georgia,FALSE
+2026-06-02,Haiti,New Zealand,4,0,Friendly,Fort Lauderdale,United States,TRUE
+2026-06-02,Morocco,Madagascar,4,0,Friendly,Rabat,Morocco,FALSE
+2026-06-02,Wales,Ghana,1,1,Friendly,Cardiff,Wales,FALSE
+2026-06-03,Albania,Israel,0,1,Friendly,Tirana,Albania,FALSE
+2026-06-03,DR Congo,Denmark,0,0,Friendly,Liège,Belgium,TRUE
+2026-06-03,Gibraltar,British Virgin Islands,4,0,Friendly,Europa Point,Gibraltar,FALSE
+2026-06-03,South Korea,El Salvador,1,0,Friendly,Provo,United States,TRUE
+2026-06-03,Luxembourg,Italy,0,1,Friendly,Luxembourg,Luxembourg,FALSE
+2026-06-03,Netherlands,Algeria,0,1,Friendly,Rotterdam,Netherlands,FALSE
+2026-06-03,Panama,Dominican Republic,4,2,Friendly,Panama City,Panama,FALSE
+2026-06-03,Poland,Nigeria,2,2,Friendly,Warsaw,Poland,FALSE
+2026-06-03,Philippines,Guam,5,1,Friendly,Manila,Philippines,FALSE
+2026-06-01,Maldives,Pakistan,0,3,Diamond Jubilee International Football Tournament,Malé,Maldives,FALSE
+2026-06-04,Andorra,Liechtenstein,2,0,Friendly,Encamp,Andorra,FALSE
+2026-06-04,Cambodia,Bhutan,4,0,Friendly,Phnom Penh,Cambodia,FALSE
+2026-06-04,France,Ivory Coast,1,2,Friendly,Nantes,France,FALSE
+2026-06-04,Guatemala,Czech Republic,1,5,Friendly,Harrison,United States,TRUE
+2026-06-04,Iran,Mali,2,0,Friendly,Antalya,Turkey,TRUE
+2026-06-04,Lesotho,Kenya,1,1,Friendly,Pretoria,South Africa,TRUE
+2026-06-04,Mexico,Serbia,5,1,Friendly,Toluca,Mexico,FALSE
+2026-06-04,Northern Ireland,Guinea,1,0,Friendly,La Línea de la Concepción,Spain,TRUE
+2026-06-04,Slovenia,Cyprus,1,1,Friendly,Ljubljana,Slovenia,FALSE
+2026-06-04,Spain,Iraq,1,1,Friendly,La Coruna,Spain,FALSE
+2026-06-04,Sweden,Greece,2,2,Friendly,Solna,Sweden,FALSE
+2026-06-05,Angola,Mauritania,1,1,Friendly,Casablanca,Morocco,TRUE
+2026-06-05,Azerbaijan,Malta,0,2,Friendly,Szombathely,Hungary,TRUE
+2026-06-05,Belarus,Syria,4,1,Friendly,Minsk,Belarus,FALSE
+2026-06-05,Canada,Republic of Ireland,1,1,Friendly,Montreal,Canada,FALSE
+2026-06-05,Georgia,Bahrain,2,0,Friendly,Tbilisi,Georgia,FALSE
+2026-06-05,Haiti,Peru,1,2,Friendly,Miami,United States,TRUE
+2026-06-05,Hong Kong,Mongolia,2,0,Friendly,Hong Kong,Hong Kong,FALSE
+2026-06-05,Hungary,Finland,2,1,Friendly,Budapest,Hungary,FALSE
+2026-06-05,Indonesia,Oman,3,0,Friendly,Jakarta,Indonesia,FALSE
+2026-06-05,Moldova,Bulgaria,2,2,Friendly,Chișinău,Moldova,FALSE
+2026-06-05,Paraguay,Nicaragua,4,0,Friendly,Asunción,Paraguay,FALSE
+2026-06-05,San Marino,Bangladesh,1,2,Friendly,Serravalle,San Marino,FALSE
+2026-06-05,Singapore,China,1,2,Friendly,Singapore,Singapore,FALSE
+2026-06-05,Slovakia,Montenegro,2,2,Friendly,Košice,Slovakia,FALSE
+2026-06-05,Tajikistan,India,3,1,Friendly,Tursunzade,Tajikistan,FALSE
+2026-06-05,Thailand,Kuwait,2,2,Friendly,Pathum Thani,Thailand,FALSE
+2026-06-05,Russia,Burkina Faso,3,0,Friendly,Volgograd,Russia,FALSE
+2026-06-05,Benin,Niger,1,1,Friendly,Casablanca,Morocco,TRUE
+2026-06-05,Central African Republic,Togo,1,1,Friendly,Mohammedia,Morocco,TRUE
+2026-06-05,Puerto Rico,Saudi Arabia,0,3,Friendly,Austin,United States,TRUE
+2026-06-06,Vanuatu,Fiji,2,1,Friendly,Port Vila,Vanuatu,FALSE
+2026-06-06,Albania,Luxembourg,0,1,Friendly,Tirana,Albania,FALSE
+2026-06-06,Argentina,Honduras,2,0,Friendly,College Station,United States,TRUE
+2026-06-06,Armenia,Kazakhstan,1,1,Friendly,Yerevan,Armenia,FALSE
+2026-06-06,Australia,Switzerland,1,1,Friendly,San Diego,United States,TRUE
+2026-06-06,Belgium,Tunisia,5,0,Friendly,Brussels,Belgium,FALSE
+2026-06-06,Bermuda,Cape Verde,3,0,Friendly,East Hartford,United States,TRUE
+2026-06-06,Bolivia,Scotland,0,4,Friendly,Harrison,United States,TRUE
+2026-06-06,Brazil,Egypt,2,1,Friendly,Cleveland,United States,TRUE
+2026-06-06,Curaçao,Aruba,4,0,Friendly,Willemstad,Curaçao,FALSE
+2026-06-06,England,New Zealand,1,0,Friendly,Tampa,United States,TRUE
+2026-06-06,Sierra Leone,Liberia,1,0,Friendly,Bo,Sierra Leone,FALSE
+2026-06-06,Ethiopia,Malawi,1,0,Friendly,Dire Dawa,Ethiopia,FALSE
+2026-06-06,Gibraltar,Cayman Islands,4,1,Friendly,Gibraltar,Gibraltar,FALSE
+2026-06-06,Jamaica,South Africa,0,1,Friendly,Pachua,Mexico,TRUE
+2026-06-06,Kyrgyzstan,Palestine,0,0,Friendly,Bishkek,Kyrgyzstan,FALSE
+2026-06-06,Panama,Bosnia and Herzegovina,1,1,Friendly,St Louis,United States,TRUE
+2026-06-06,Portugal,Chile,2,1,Friendly,Oeiras,Portugal,FALSE
+2026-06-06,Qatar,El Salvador,0,0,Friendly,Los Angeles,United States,TRUE
+2026-06-06,Romania,Wales,2,1,Friendly,Bucharest,Romania,FALSE
+2026-06-06,United States,Germany,1,2,Friendly,Chicago,United States,FALSE
+2026-06-06,British Virgin Islands,Bonaire,2,0,Friendly,Malaga,Spain,TRUE
+2026-06-06,Gibraltar,Cayman Islands,4,1,Friendly,Europa Point,Gibraltar,FALSE
+2026-06-06,Venezuela,Turkey,1,2,Friendly,Fort Lauderdale,United States,TRUE
+2026-06-06,Myanmar,Guam,6,1,Tri-Nations Cup,Manila,Philippines,TRUE
+2026-06-06,Lithuania,Latvia,1,1,Baltic Cup,Kaunas,Lithuania,FALSE
+2026-06-06,Estonia,Faroe Islands,1,0,Baltic Cup,Pärnu,Estonia,FALSE
+2026-06-07,Afghanistan,Pakistan,0,2,Diamond Jubilee International Football Tournament,Malé,Maldives,FALSE
+2026-06-07,Croatia,Slovenia,2,1,Friendly,Varaždin,Croatia,FALSE
+2026-06-07,Ecuador,Guatemala,3,0,Friendly,Columbus,United States,TRUE
+2026-06-07,Greece,Italy,0,1,Friendly,Heraklion,Greece,FALSE
+2026-06-07,Jordan,Colombia,0,2,Friendly,San Diego,United States,TRUE
+2026-06-07,Kosovo,Andorra,3,0,Friendly,Pristina,Kosovo,FALSE
+2026-06-07,Liechtenstein,Cyprus,0,2,Friendly,Vaduz,Liechtenstein,FALSE
+2026-06-07,Morocco,Norway,1,1,Friendly,Harrison,United States,TRUE
+2026-06-07,Denmark,Ukraine,2,1,Friendly,Odense,Denmark,FALSE
+2026-06-08,France,Northern Ireland,3,1,Friendly,Lille,France,FALSE
+2026-06-08,Netherlands,Uzbekistan,2,1,Friendly,New York,United States,TRUE
+2026-06-08,Peru,Spain,1,3,Friendly,Puebla,Mexico,TRUE
+2026-06-08,Mauritania,Niger,1,0,Friendly,Casablanca,Morocco,TRUE
 2026-06-11,Mexico,South Africa,NA,NA,FIFA World Cup,Mexico City,Mexico,FALSE
 2026-06-11,South Korea,Czech Republic,NA,NA,FIFA World Cup,Zapopan,Mexico,TRUE
 2026-06-12,Canada,Bosnia and Herzegovina,NA,NA,FIFA World Cup,Toronto,Canada,FALSE
