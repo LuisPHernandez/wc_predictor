@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  predictor-ui:
+    build: .
+    container_name: world-cup-ui
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    volumes:
+      - ./predictions_history.csv:/app/predictions_history.csv

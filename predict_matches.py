@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import pickle
 
 from src.loader import (
     load_kaggle_data,
@@ -132,6 +133,10 @@ model = DixonColes(
 )
 
 model.fit()
+
+with open(PROJECT_ROOT / "data" / "model" / "dixon_coles_model_2026.pkl", "wb") as f:
+    pickle.dump(model, f)
+print("--> Model state permanently frozen to disk.")
 
 # ============================================================
 # LOAD INPUT MATCHES

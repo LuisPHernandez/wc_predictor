@@ -178,7 +178,7 @@ class DixonColes:
         print(f"Fitting Dixon-Coles on {len(self.df)} matches, "
               f"{self.n_teams} teams...")
 
-        # Precompute static arrays once, these never change between optimizer iterations
+        # Precompute static arrays once
         self._h_idx    = np.array([self.team_index[t] for t in self.df['home_team']])
         self._a_idx    = np.array([self.team_index[t] for t in self.df['away_team']])
         self._h_goals  = self.df['home_score'].astype(int).values
