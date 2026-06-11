@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from multiprocessing import Pool as ProcessPool
 from src.loader import load_kaggle_data, load_pool_data, get_wc_teams
+from src.model import DixonColes, PRODUCTION_ALPHA, PRODUCTION_GOAL_BLEND_BETA
 from src.model import DixonColes
 from src.scoring import points_for_prediction
 from src.odds_loader import (
@@ -107,7 +108,7 @@ def run_backtest(
     wc_year,
     decay_lambda=DECAY_LAMBDA,
     training_years=TRAINING_YEARS,
-    alpha=0.30,
+    alpha=PRODUCTION_ALPHA
 ):
     """
     Runs the full backtest for a single WC year.
@@ -142,7 +143,7 @@ def run_backtest(
     print(f"Training matches: {len(kaggle_df)}")
 
     # --- Fit model ---
-    model = DixonColes(kaggle_df, decay_lambda=decay_lambda, regularization=REGULARIZATION, goal_blend_beta=0.30,)
+    model = DixonColes(kaggle_df, decay_lambda=decay_lambda, regularization=REGULARIZATION, goal_blend_beta=PRODUCTION_GOAL_BLEND_BETA,)
     print(model.goal_blend_beta)
     model.fit()
 
@@ -358,7 +359,7 @@ if __name__ == "__main__":
 
         result = run_backtest(
             year,
-            alpha=alpha,
+            alpha=alpha
         )
 
         print(

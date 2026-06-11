@@ -9,14 +9,15 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.mappings import ODDS_NAME_TO_FIFA
 
-CSV_PATH = "wc_analysis_rho.csv"
+CSV_PATH = PROJECT_ROOT / "data" / "analysis" / "wc_analysis_rho.csv"
 
 BETAS = [
+    0.1,
     0.2,
-    0.25,
     0.3,
-    0.35,
-    0.50,
+    0.4,
+    0.5,
+    0.6,
 ]
 
 df = pd.read_csv(CSV_PATH)
@@ -67,7 +68,7 @@ for year in [2014, 2018, 2022]:
                 "year",
                 "home_team",
                 "away_team",
-                "ou_lines",
+                "implied_xg",
             ]
         ]
     )
@@ -128,7 +129,7 @@ for beta in BETAS:
     work["blend_total"] = (
         beta * work["model_total"]
         +
-        (1 - beta) * work["ou_lines"]
+        (1 - beta) * work["implied_xg"]
     )
 
     work["bucket"] = (

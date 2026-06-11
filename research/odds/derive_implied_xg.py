@@ -1,17 +1,16 @@
 import pandas as pd
 
-from research.odds.implied_xg import implied_expected_goals
 from pathlib import Path
 import sys
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from research.odds.implied_xg import implied_expected_goals
+
 FILES = [
-   PROJECT_ROOT / "data" / "odds" / "2014wc_expected_goals.csv",
-   PROJECT_ROOT / "data" / "odds" / "2018wc_expected_goals.csv",
-   PROJECT_ROOT / "data" / "odds" / "2022wc_expected_goals.csv",
+   PROJECT_ROOT / "data" / "odds" / "2026wc_expected_goals.csv",
 ]
 
 for file in FILES:

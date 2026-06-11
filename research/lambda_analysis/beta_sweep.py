@@ -13,10 +13,13 @@ from src.model import DixonColes
 
 BETAS = [
     0.1,
-    0.15,
     0.2,
     0.25,
     0.3,
+    0.35,
+    0.4,
+    0.5,
+    0.6
 ]
 
 YEARS = [
@@ -48,7 +51,6 @@ def run_beta(beta):
             df,
             decay_lambda=decay_lambda,
             regularization=regularization,
-            goal_inflation=goal_inflation,
             goal_blend_beta=beta,
         )
 

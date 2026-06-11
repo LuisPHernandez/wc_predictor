@@ -17,9 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # ----------------------------------- Config ------------------------------------------
 
 URLS = [
-    "https://www.cuotasahora.com/football/world/copa-del-mundo-2022/results/",
-    "https://www.cuotasahora.com/football/world/copa-del-mundo-2018/results/",
-    "https://www.cuotasahora.com/football/world/copa-del-mundo-2014/results/",
+    "https://www.cuotasahora.com/football/world/campeonato-del-mundo-2026/",
 ]
 OUTPUT_FILE = PROJECT_ROOT / "scraper" / "wc_expected_goals.csv"
 

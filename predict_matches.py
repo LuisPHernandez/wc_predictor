@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pathlib import Path
 
 from src.loader import (
@@ -7,6 +8,7 @@ from src.loader import (
 from src.model import DixonColes
 from src.odds_loader import _shin_probs
 from src.mappings import code_to_name
+from implied_xg import implied_expected_goals
 
 # ============================================================
 # CONFIG
@@ -36,6 +38,11 @@ INPUT_PATH = (
 OUTPUT_PATH = (
     PROJECT_ROOT
     / "predictions.csv"
+)
+
+HIST_OUTPUT_PATH = (
+    PROJECT_ROOT
+    / "predictions_history.csv"
 )
 
 WC_START_DATE = "2026-06-11"
@@ -135,12 +142,15 @@ matches = pd.read_csv(
 )
 
 required_columns = [
+    "match_date",
     "home_team",
     "away_team",
     "home_odds",
     "draw_odds",
     "away_odds",
     "ou_line",
+    "over_odds",
+    "under_odds",
 ]
 
 missing = [
@@ -159,6 +169,7 @@ if missing:
 # ============================================================
 
 results = []
+run_timestamp = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
 
 print()
 print("=" * 60)
@@ -179,15 +190,31 @@ for row in matches.itertuples():
         "away": p_away,
     }
 
+    exact_implied_xg = implied_expected_goals(
+        line=float(row.ou_line),
+        over_odds=float(row.over_odds),
+        under_odds=float(row.under_odds)
+    )
+
     pred = model.predict(
         row.home_team,
         row.away_team,
         neutral=True,
-        market_total_goals=row.ou_line,
+        market_total_goals=exact_implied_xg,
         bookmaker_probs=bookmaker_probs,
     )
 
     results.append({
+
+        # --------------------------------------
+        # History Context Data
+        # --------------------------------------
+
+        "match_date":
+            row.match_date,
+
+        "prediction_timestamp":
+            run_timestamp,
 
         # --------------------------------------
         # Match
@@ -214,6 +241,15 @@ for row in matches.itertuples():
 
         "ou_line":
             row.ou_line,
+
+        "over_odds":
+            row.over_odds,
+
+        "under_odds":
+            row.under_odds,
+
+        "calculated_implied_xg":
+            round(exact_implied_xg, 4),
 
         # --------------------------------------
         # Optimal Prediction
@@ -303,7 +339,7 @@ for row in matches.itertuples():
     })
 
 # ============================================================
-# SAVE OUTPUT
+# SAVE CURRENT SOURCE OF TRUTH (Overwrites predictions.csv)
 # ============================================================
 
 output = pd.DataFrame(results)
@@ -313,9 +349,87 @@ output.to_csv(
     index=False,
 )
 
+# ============================================================
+# SAVE HISTORICAL LOG (Appends ONLY on meaningful changes)
+# ============================================================
+
+if HIST_OUTPUT_PATH.exists():
+    historical_df = pd.read_csv(HIST_OUTPUT_PATH)
+    
+    # Isolate the single absolute latest chronological record per fixture
+    # Note: match_date, home_team, and away_team become the index levels here
+    latest_hist = historical_df.sort_values("prediction_timestamp").groupby(
+        ["match_date", "home_team", "away_team"], observed=False
+    ).last()
+    
+    # FIX: Exclude the index keys along with the transient timestamp
+    exclude_columns = ["prediction_timestamp", "match_date", "home_team", "away_team"]
+    compare_columns = [c for c in output.columns if c not in exclude_columns]
+    filtered_new_rows = []
+    
+    for row in output.to_dict('records'):
+        key = (str(row["match_date"]), str(row["home_team"]), str(row["away_team"]))
+        
+        if key in latest_hist.index:
+            hist_row = latest_hist.loc[key]
+            has_changed = False
+            
+            for col in compare_columns:
+                v_new = row[col]
+                v_old = hist_row[col]
+                
+                if pd.isna(v_new) and pd.isna(v_old):
+                    continue
+                if pd.isna(v_new) or pd.isna(v_old):
+                    has_changed = True
+                    break
+                    
+                # Handle floating-point tolerances safely
+                try:
+                    if np.isclose(float(v_new), float(v_old), atol=1e-6):
+                        continue
+                except (ValueError, TypeError):
+                    pass
+                    
+                if v_new != v_old:
+                    has_changed = True
+                    break
+            
+            if has_changed:
+                filtered_new_rows.append(row)
+        else:
+            # Completely fresh match fixture not found in history logs yet
+            filtered_new_rows.append(row)
+            
+    if filtered_new_rows:
+        new_history_df = pd.DataFrame(filtered_new_rows)
+        combined_history = pd.concat([historical_df, new_history_df], ignore_index=True)
+        print(f"--> Detected market line or prediction changes for {len(filtered_new_rows)} fixtures. Updating log.")
+    else:
+        combined_history = historical_df
+        print("--> All match inputs and predictions match their last recorded state. History log untouched.")
+else:
+    combined_history = output
+    print("--> No existing history log found. Creating fresh predictions_history.csv log.")
+
+# Sort chronologically by match groups so snapshots track cleanly over time
+combined_history = combined_history.sort_values(
+    by=["match_date", "home_team", "away_team", "prediction_timestamp"],
+    ascending=[True, True, True, True]
+)
+
+combined_history.to_csv(
+    HIST_OUTPUT_PATH,
+    index=False,
+)
+
+# ============================================================
+# PRINT OUTPUT SUMMARY
+# ============================================================
+
 print()
 print("=" * 60)
-print("PREDICTIONS")
+print("PREDICTIONS (SOURCE OF TRUTH)")
 print("=" * 60)
 
 print(
@@ -325,6 +439,5 @@ print(
 )
 
 print()
-print(
-    f"Saved: {OUTPUT_PATH}"
-)
+print(f"Saved current source of truth: {OUTPUT_PATH}")
+print(f"Updated chronological history log: {HIST_OUTPUT_PATH}")

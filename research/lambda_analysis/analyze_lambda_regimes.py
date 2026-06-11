@@ -17,8 +17,7 @@ data/odds/2014wc_expected_goals.csv    — market O/U lines per match
 data/odds/2018wc_expected_goals.csv
 data/odds/2022wc_expected_goals.csv
 data/wc2026_lambda_check.csv           — model lambda predictions for 2026
-data/odds/2026wc_expected_goals.csv    — market O/U lines for 2026
-                                         (ou_lines column only; no implied_xg)
+data/odds/2026wc_expected_goals.csv    — market O/U lines and implied xG for 2026
 
 Outputs  (all written to lambda_analysis/)
 ------------------------------------------
@@ -245,7 +244,6 @@ fine_summary.to_csv(OUTDIR / "fine_bucket_summary.csv")
 
 # ---------------------------------------------------------------------------
 # 8. Load 2026 lambdas and O/U odds
-#    NOTE: 2026 odds file has ou_lines only — no implied_xg column.
 # ---------------------------------------------------------------------------
 
 section("8. LOADING 2026 DATA")
@@ -261,13 +259,15 @@ o26 = normalize_teams(o26)
 print(f"\nLambda rows (2026): {len(wc26)}")
 print(f"O/U rows    (2026): {len(o26)}")
 
-# Merge ou_lines only — implied_xg is not available for 2026
+# Merge both ou_lines and implied_xg for 2026
 wc26 = wc26.merge(
-    o26[["home_team", "away_team", "ou_lines"]],
+    o26[["home_team", "away_team", "ou_lines", "implied_xg"]],
     on=["home_team", "away_team"],
     how="inner",
 )
 wc26["market_gap_line"] = wc26["lambda_total"] - wc26["ou_lines"]
+wc26["market_gap_xg"]   = wc26["lambda_total"] - wc26["implied_xg"]
+wc26["xg_minus_line"]   = wc26["implied_xg"] - wc26["ou_lines"]
 wc26["bucket"] = pd.cut(
     wc26["lambda_total"],
     bins=[0, 2.5, 3.0, 100],
@@ -277,10 +277,24 @@ wc26["bucket"] = pd.cut(
 print(f"Matched     (2026): {len(wc26)}")
 print(f"\nFirst 5 rows:")
 print(
-    wc26[["home_team", "away_team", "lambda_total", "ou_lines", "market_gap_line"]]
+    wc26[["home_team", "away_team", "lambda_total", "ou_lines", "implied_xg",
+          "market_gap_line", "market_gap_xg"]]
     .head()
     .to_string(index=False)
 )
+
+section("8b. 2026 LINE VS IMPLIED XG")
+print(wc26["xg_minus_line"].describe())
+
+bucket_xg_26 = (
+    wc26.groupby("bucket")
+    .agg(
+        avg_line=("ou_lines", "mean"),
+        avg_xg=("implied_xg", "mean"),
+        avg_delta=("xg_minus_line", "mean"),
+    )
+)
+print(bucket_xg_26.round(3))
 
 # ---------------------------------------------------------------------------
 # 9. 2026 market vs model
@@ -293,8 +307,11 @@ bucket26 = (
     .agg(
         matches=("bucket", "count"),
         avg_model=("lambda_total", "mean"),
-        avg_market=("ou_lines", "mean"),
-        avg_gap=("market_gap_line", "mean"),   # gap vs O/U line (no xg for 2026)
+        avg_market_line=("ou_lines", "mean"),
+        avg_implied_xg=("implied_xg", "mean"),
+        avg_gap_line=("market_gap_line", "mean"),
+        avg_gap_xg=("market_gap_xg", "mean"),
+        avg_xg_vs_line=("xg_minus_line", "mean"),
     )
 )
 print(f"\n{bucket26.to_string()}")
@@ -323,13 +340,17 @@ Historical 2014–2022:
   Market k (overall): {hist_market_k:.3f}
 
 2026 pre-tournament:
-  Avg model lambda  : {wc26["lambda_total"].mean():.3f}
-  Avg market O/U    : {wc26["ou_lines"].mean():.3f}
-  Avg model−market gap (vs line): {wc26["market_gap_line"].mean():.3f}
+  Avg model lambda             : {wc26["lambda_total"].mean():.3f}
+  Avg market O/U               : {wc26["ou_lines"].mean():.3f}
+  Avg implied xG               : {wc26["implied_xg"].mean():.3f}
+  Model−market gap (vs O/U)    : {wc26["market_gap_line"].mean():+.3f}
+  Model−market gap (vs impl xG): {wc26["market_gap_xg"].mean():+.3f}
+  Avg xG − line                : {wc26["xg_minus_line"].mean():+.3f}
 
 Interpretation:
-  The model predicts {wc26["lambda_total"].mean():.3f} goals/game for 2026 vs
-  a market O/U of {wc26["ou_lines"].mean():.3f} — a gap of {wc26["market_gap_line"].mean():+.3f}.
+  The model predicts {wc26["lambda_total"].mean():.3f} goals/game for 2026 vs a market O/U of
+  {wc26["ou_lines"].mean():.3f} (gap {wc26["market_gap_line"].mean():+.3f}) and implied xG of
+  {wc26["implied_xg"].mean():.3f} (gap {wc26["market_gap_xg"].mean():+.3f}).
   Historically, model k drops below 1.0 when lambda > 3.0 (model overshoots).
   A flat k=1.15 would OVERPREDICT goals for high-lambda 2026 games.
   Per-bucket k calibration is recommended.
@@ -379,14 +400,18 @@ fig.savefig(OUTDIR / "lambda_distribution.png", dpi=150)
 plt.close(fig)
 print(f"\n  Saved: lambda_distribution.png")
 
-# Plot 2: 2026 market O/U vs model lambda scatter
+# Plot 2: 2026 model lambda vs market O/U and implied xG scatter
 fig, ax = plt.subplots(figsize=(8, 6))
-ax.scatter(wc26["lambda_total"], wc26["ou_lines"], alpha=0.7, s=40, color="steelblue")
-mx = max(wc26["lambda_total"].max(), wc26["ou_lines"].max()) + 0.3
+ax.scatter(wc26["lambda_total"], wc26["ou_lines"],   alpha=0.7, s=40,
+           color="steelblue",  label="O/U line")
+ax.scatter(wc26["lambda_total"], wc26["implied_xg"], alpha=0.7, s=40,
+           color="darkorange", label="Implied xG", marker="s")
+mx = max(wc26["lambda_total"].max(), wc26["ou_lines"].max(),
+         wc26["implied_xg"].max()) + 0.3
 ax.plot([0, mx], [0, mx], "k--", linewidth=1, label="y = x (perfect agreement)")
 ax.set_xlabel("Model lambda (total)")
-ax.set_ylabel("Market O/U line")
-ax.set_title("2026: Model Lambda vs Market O/U")
+ax.set_ylabel("Market estimate")
+ax.set_title("2026: Model Lambda vs Market O/U and Implied xG")
 ax.legend()
 fig.tight_layout()
 fig.savefig(OUTDIR / "market_vs_model_2026.png", dpi=150)

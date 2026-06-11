@@ -296,22 +296,37 @@ def load_wc_expected_goals_lookup(year):
         .replace(ODDS_NAME_TO_FIFA)
     )
 
+    ou["match_date"] = pd.to_datetime(
+        ou["date"]
+    ).dt.date
+
     pool = load_pool_data(
         POOL_PATH,
         year,
     )
 
-    games = pool["games"]
+    games = pool["games"].copy()
+
+    # Use the local tournament date (first 10 chars of the ISO string) rather
+    # than converting to UTC. UTC conversion can shift the date by one day for
+    # games played after ~21:00 local time in negative-offset timezones (e.g.
+    # Brazil UTC-3 at 22:00 local = 01:00 UTC next day). The xG CSV dates are
+    # always the local tournament dates, so this must match.
+    games["match_date"] = pd.to_datetime(
+        games["datetime"].str[:10]
+    ).dt.date
 
     game_lookup = {}
 
     for row in games.itertuples():
-
+        # Key: (year, match_date, sorted_team_a, sorted_team_b)
+        # - year + date together uniquely identify a match even if the same
+        #   two teams play in both the group stage and the knockout stage
+        #   (e.g. Belgium/England in 2018, Croatia/Morocco in 2022)
+        # - sorted() makes the key order-independent so it doesn't matter
+        #   whether the xG CSV lists the teams as home/away or away/home
         game_lookup[
-            (
-                row.team1,
-                row.team2,
-            )
+            (year, row.match_date, *sorted([row.team1, row.team2]))
         ] = row.game_id
 
     expected_goals_lookup = {}
@@ -320,10 +335,7 @@ def load_wc_expected_goals_lookup(year):
 
     for row in ou.itertuples():
 
-        key = (
-            row.home_team,
-            row.away_team,
-        )
+        key = (year, row.match_date, *sorted([row.home_team, row.away_team]))
 
         game_id = game_lookup.get(key)
 
@@ -332,9 +344,7 @@ def load_wc_expected_goals_lookup(year):
             missing.append(key)
             continue
 
-        expected_goals_lookup[
-            game_id
-        ] = float(row.ou_lines)
+        expected_goals_lookup[game_id] = float(row.implied_xg)
 
     print(
         f"{year}: matched "
