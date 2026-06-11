@@ -1,16 +1,19 @@
-version: '3.8'
-
 services:
   predictor-ui:
     build: .
     container_name: world-cup-ui
-    ports:
-      - "8501:8501"
     restart: unless-stopped
     volumes:
       - ./predictions_history.csv:/app/predictions_history.csv
-    # Hard resource limit block
+    expose:
+      - "8501"
+    networks:
+      - proxy
     deploy:
       resources:
         limits:
           memory: 150M
+
+networks:
+  proxy:
+    external: true
