@@ -107,7 +107,7 @@ if submit_button:
             )
             
             # Display Core Strategy Cards
-            st.success(f"### Optimal Prediction: {record['prediction']}")
+            st.success(f"### Optimal Prediction ({home_team.strip()} vs {away_team.strip()}): {record['prediction']}")
             
             c_ev1, c_ev2, c_margin = st.columns(3)
             c_ev1.metric("Optimal EV Pts", f"{record['expected_pts']:.4f}")
