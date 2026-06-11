@@ -12,7 +12,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 150M
+          memory: 225M
 
 networks:
   proxy:
