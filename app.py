@@ -2,11 +2,13 @@ import streamlit as st # pyrefly: ignore [missing-import]
 from pathlib import Path
 import pandas as pd
 
+# 1. Place this at the absolute top of the file before ANY other st code
+st.set_page_config(page_title="WC 2026 Predictor", page_icon="🔮", layout="centered")
+
 # ============================================================
 # SIMPLE PASSWORD PROTECTION LAYER
 # ============================================================
 
-# Initialize the authentication state if it doesn't exist yet
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
@@ -15,8 +17,6 @@ def check_password():
     if st.session_state["authenticated"]:
         return True
 
-    # Render a clean, mobile-friendly login container
-    st.set_page_config(page_title="Login Required", page_icon="🔒", layout="centered")
     st.title("🔒 Restricted Access")
     
     # Password entry mask
@@ -43,9 +43,6 @@ if not check_password():
 
 # Import your standalone single-prediction pipeline
 from predict_match import predict_single_match, append_to_history_if_changed
-
-# Configure mobile-friendly viewport page settings
-st.set_page_config(page_title="WC 2026 Predictor", page_icon="predictor", layout="centered")
 
 st.title("2026 World Cup Predictor")
 st.write("Evaluate live market odds adjustments instantly.")
