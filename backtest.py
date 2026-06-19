@@ -157,14 +157,13 @@ def run_backtest(
     if alpha < 1.0:
         try:
             odds_lookup = load_wc_odds_lookup(wc_year)
-            expected_goals_lookup = (
-                load_wc_expected_goals_lookup(
-                    wc_year
-                )
-            )
         except (KeyError, FileNotFoundError):
-            print(f"  No odds available for {wc_year} — running pure model")
-            alpha = 1.0
+            print(f"  No 1X2 odds available for {wc_year}")
+            
+        try:
+            expected_goals_lookup = load_wc_expected_goals_lookup(wc_year)
+        except (KeyError, FileNotFoundError):
+            print(f"  No market xG available for {wc_year} — skipping beta blend")
 
     model_preds = []
     for row in games.itertuples():

@@ -54,6 +54,7 @@ WC_PATH = PROJECT_ROOT / "data" / "analysis" / "wc_analysis_rho.csv"
 from src.mappings import ODDS_NAME_TO_FIFA
 
 HIST_ODDS_PATHS = {
+    2010: PROJECT_ROOT / "data" / "odds" / "2010wc_expected_goals.csv",
     2014: PROJECT_ROOT / "data" / "odds" / "2014wc_expected_goals.csv",
     2018: PROJECT_ROOT / "data" / "odds" / "2018wc_expected_goals.csv",
     2022: PROJECT_ROOT / "data" / "odds" / "2022wc_expected_goals.csv",

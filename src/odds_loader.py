@@ -37,6 +37,7 @@ WC_SHEETS = {
 }
 
 WC_EXPECTED_GOALS_CSV = {
+    2010: PROJECT_ROOT / "data" / "odds" / "2010wc_expected_goals.csv",
     2014: PROJECT_ROOT / "data" / "odds" / "2014wc_expected_goals.csv",
     2018: PROJECT_ROOT / "data" / "odds" / "2018wc_expected_goals.csv",
     2022: PROJECT_ROOT / "data" / "odds" / "2022wc_expected_goals.csv",
