@@ -9,7 +9,7 @@ from src.scoring import points_for_prediction
 # ============================================================
 
 PRODUCTION_ALPHA = 0.40
-PRODUCTION_GOAL_BLEND_BETA = 0.10
+PRODUCTION_GOAL_BLEND_BETA = 0.05
 
 PRODUCTION_K_LOW = 0.93
 PRODUCTION_K_HIGH = 1.01

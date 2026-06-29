@@ -27,6 +27,7 @@ ODDS_PATH  = PROJECT_ROOT / "data" / "odds" / 'WorldCup2026.xlsx'
 CSV_ODDS_YEARS = {
     2006: PROJECT_ROOT / "data" / "odds" / "2006_odds.csv",
     2010: PROJECT_ROOT / "data" / "odds" / "2010_odds.csv",
+    2026: PROJECT_ROOT / "data" / "odds" / "2026_odds.csv",
 }
 POOL_PATH  = PROJECT_ROOT / 'data' / 'pool'
 
@@ -41,6 +42,7 @@ WC_EXPECTED_GOALS_CSV = {
     2014: PROJECT_ROOT / "data" / "odds" / "2014wc_expected_goals.csv",
     2018: PROJECT_ROOT / "data" / "odds" / "2018wc_expected_goals.csv",
     2022: PROJECT_ROOT / "data" / "odds" / "2022wc_expected_goals.csv",
+    2026: PROJECT_ROOT / "data" / "odds" / "2026wc_expected_goals.csv",
 }
 
 def load_wc_odds_lookup_csv(year):

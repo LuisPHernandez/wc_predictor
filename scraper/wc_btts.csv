@@ -1,0 +1,193 @@
+date,home_team,away_team,avg_yes,avg_no
+2014-07-13,Alemania,Argentina,2.0325,1.7075
+2014-07-12,Brasil,Países Bajos,1.55,2.3125
+2014-07-09,Países Bajos,Argentina,2.03,1.715
+2014-07-08,Brasil,Alemania,2.03,1.7125
+2014-07-05,Países Bajos,Costa Rica,2.1375,1.6475
+2014-07-05,Argentina,Bélgica,1.915,1.795
+2014-07-04,Brasil,Colombia,2.0025,1.745
+2014-07-04,Francia,Alemania,1.8625,1.8625
+2014-07-01,Bélgica,EE. UU.,1.9825,1.7525
+2014-07-01,Argentina,Suiza,1.8225,1.885
+2014-06-30,Alemania,Argelia,1.9575,1.79
+2014-06-30,Francia,Nigeria,2.0775,1.6825
+2014-06-29,Costa Rica,Grecia,2.2425,1.585
+2014-06-29,Países Bajos,México,1.87,1.8375
+2014-06-28,Colombia,Uruguay,2.0575,1.695
+2014-06-28,Brasil,Chile,1.8225,1.905
+2014-06-26,Argelia,Rusia,1.9225,1.7925
+2014-06-26,Corea del Sur,Bélgica,1.7025,2.045
+2014-06-26,EE. UU.,Alemania,1.755,1.98
+2014-06-26,Portugal,Ghana,1.4275,2.6875
+2014-06-25,Ecuador,Francia,1.6675,2.1125
+2014-06-25,Honduras,Suiza,1.84,1.88
+2014-06-25,Nigeria,Argentina,1.8875,1.82
+2014-06-25,Bosnia-Herzegovina,Irán,1.88,1.8575
+2014-06-24,Japón,Colombia,1.62,2.185
+2014-06-24,Grecia,Costa de Marfil,1.825,1.8825
+2014-06-24,Costa Rica,Inglaterra,1.7175,2.0275
+2014-06-24,Italia,Uruguay,1.73,2.0225
+2014-06-23,Camerún,Brasil,2.45,1.505
+2014-06-23,Croacia,México,1.7775,1.94
+2014-06-23,Australia,España,1.6775,2.1
+2014-06-23,Países Bajos,Chile,1.605,2.215
+2014-06-22,EE. UU.,Portugal,1.7175,2.0275
+2014-06-22,Corea del Sur,Argelia,2.075,1.6875
+2014-06-22,Bélgica,Rusia,2.0375,1.7
+2014-06-21,Nigeria,Bosnia-Herzegovina,1.73,2.0125
+2014-06-21,Alemania,Ghana,1.8,1.9075
+2014-06-21,Argentina,Irán,2.595,1.4525
+2014-06-20,Honduras,Ecuador,1.83,1.89
+2014-06-20,Suiza,Francia,1.975,1.79
+2014-06-20,Italia,Costa Rica,2.04,1.705
+2014-06-19,Japón,Grecia,1.77,1.9375
+2014-06-19,Uruguay,Inglaterra,1.6325,2.1625
+2014-06-19,Colombia,Costa de Marfil,1.8,1.92
+2014-06-18,Camerún,Croacia,1.88,1.835
+2014-06-18,España,Chile,1.66,2.1125
+2014-06-18,Australia,Países Bajos,2.1125,1.66
+2014-06-17,Rusia,Corea del Sur,1.958,1.758
+2014-06-17,Brasil,México,1.9475,1.7675
+2014-06-17,Bélgica,Argelia,2.11,1.66
+2014-06-16,Ghana,EE. UU.,1.804,1.926
+2014-06-16,Irán,Nigeria,2.058,1.692
+2014-06-16,Alemania,Portugal,1.652,2.118
+2014-06-15,Argentina,Bosnia-Herzegovina,1.96,1.78
+2014-06-15,Francia,Honduras,2.404,1.512
+2014-06-15,Suiza,Ecuador,1.906,1.808
+2014-06-14,Costa de Marfil,Japón,1.802,1.926
+2014-06-14,Inglaterra,Italia,2.006,1.726
+2014-06-14,Uruguay,Costa Rica,2.466,1.494
+2014-06-14,Colombia,Grecia,2.414,1.516
+2014-06-13,Chile,Australia,2.106,1.656
+2014-06-13,España,Países Bajos,2.124,1.654
+2014-06-13,México,Camerún,2.082,1.654
+2014-06-12,Brasil,Croacia,2.514,1.46
+2018-07-15,Francia,Croacia,2.245,1.63
+2018-07-14,Bélgica,Inglaterra,1.515,2.4875
+2018-07-11,Croacia,Inglaterra,2.1675,1.6875
+2018-07-10,Francia,Bélgica,1.765,2.0525
+2018-07-07,Rusia,Croacia,2.0625,1.7375
+2018-07-07,Suecia,Inglaterra,2.1075,1.7175
+2018-07-06,Brasil,Bélgica,1.6425,2.23
+2018-07-06,Uruguay,Francia,2.235,1.635
+2018-07-03,Colombia,Inglaterra,2.15,1.69
+2018-07-03,Suecia,Suiza,1.9925,1.8025
+2018-07-02,Bélgica,Japón,1.9225,1.8625
+2018-07-02,Brasil,México,1.925,1.8675
+2018-07-01,Croacia,Dinamarca,2.1625,1.675
+2018-07-01,España,Rusia,1.9175,1.87
+2018-06-30,Uruguay,Portugal,2.1625,1.6775
+2018-06-30,Francia,Argentina,1.9875,1.805
+2018-06-28,Inglaterra,Bélgica,2.0125,1.7875
+2018-06-28,Senegal,Colombia,1.87,1.93
+2018-06-28,Panamá,Túnez,1.89,1.8925
+2018-06-28,Japón,Polonia,1.79,2.0075
+2018-06-27,Serbia,Brasil,1.765,2.0375
+2018-06-27,Suiza,Costa Rica,2.1375,1.695
+2018-06-27,Corea del Sur,Alemania,2.0725,1.7325
+2018-06-27,México,Suecia,1.785,2.0175
+2018-06-26,Nigeria,Argentina,1.71,2.1175
+2018-06-26,Islandia,Croacia,1.89,1.895
+2018-06-26,Australia,Perú,1.7825,2.04
+2018-06-26,Dinamarca,Francia,2.0425,1.7625
+2018-06-25,España,Marruecos,1.82,1.975
+2018-06-25,Irán,Portugal,1.96,1.8275
+2018-06-25,Arabia Saudí,Egipto,2.0475,1.75
+2018-06-25,Uruguay,Rusia,1.895,1.9
+2018-06-24,Polonia,Colombia,1.9025,1.89
+2018-06-24,Japón,Senegal,2.0625,1.7375
+2018-06-24,Inglaterra,Panamá,2.7425,1.4375
+2018-06-23,Alemania,Suecia,1.8125,1.9725
+2018-06-23,Corea del Sur,México,1.9025,1.89
+2018-06-23,Bélgica,Túnez,2.1325,1.6975
+2018-06-22,Serbia,Suiza,2.0,1.79
+2018-06-22,Nigeria,Islandia,2.1475,1.6925
+2018-06-22,Brasil,Costa Rica,2.835,1.4175
+2018-06-21,Argentina,Croacia,1.94,1.8525
+2018-06-21,Francia,Perú,2.335,1.6
+2018-06-21,Dinamarca,Australia,2.0475,1.75
+2018-06-20,Irán,España,2.7125,1.445
+2018-06-20,Uruguay,Arabia Saudí,2.505,1.5275
+2018-06-20,Portugal,Marruecos,2.08,1.7425
+2018-06-19,Rusia,Egipto,2.135,1.705
+2018-06-19,Polonia,Senegal,2.0475,1.77
+2018-06-19,Colombia,Japón,2.2275,1.65
+2018-06-18,Túnez,Inglaterra,2.3925,1.565
+2018-06-18,Bélgica,Panamá,2.5725,1.4975
+2018-06-18,Suecia,Corea del Sur,2.2625,1.6325
+2018-06-17,Brasil,Suiza,2.165,1.6925
+2018-06-17,Alemania,México,1.7275,2.1
+2018-06-17,Costa Rica,Serbia,2.305,1.6075
+2018-06-16,Croacia,Nigeria,2.155,1.7
+2018-06-16,Perú,Dinamarca,2.3575,1.59
+2018-06-16,Argentina,Islandia,2.22,1.655
+2018-06-16,Francia,Australia,2.33,1.6
+2018-06-15,Portugal,España,2.01,1.8025
+2018-06-15,Marruecos,Irán,2.4825,1.5275
+2018-06-15,Egipto,Uruguay,2.4,1.565
+2018-06-14,Rusia,Arabia Saudí,2.4625,1.5375
+2022-12-18,Argentina,Francia,1.875,1.885
+2022-12-17,Croacia,Marruecos,1.67,2.125
+2022-12-14,Francia,Marruecos,2.275,1.5867
+2022-12-13,Argentina,Croacia,2.0883,1.695
+2022-12-10,Inglaterra,Francia,1.925,1.8183
+2022-12-10,Marruecos,Portugal,2.04,1.73
+2022-12-09,Países Bajos,Argentina,2.03,1.7383
+2022-12-09,Croacia,Brasil,2.1917,1.63
+2022-12-06,Portugal,Suiza,1.7517,2.0117
+2022-12-06,Marruecos,España,2.1,1.69
+2022-12-05,Brasil,Corea del Sur,2.37,1.5467
+2022-12-05,Japón,Croacia,1.985,1.775
+2022-12-04,Inglaterra,Senegal,2.295,1.5833
+2022-12-04,Francia,Polonia,2.0317,1.745
+2022-12-03,Argentina,Australia,2.335,1.5667
+2022-12-03,Países Bajos,EE. UU.,2.02,1.7483
+2022-12-02,Camerún,Brasil,2.0333,1.7383
+2022-12-02,Serbia,Suiza,1.7067,2.07
+2022-12-02,Corea del Sur,Portugal,1.8733,1.87
+2022-12-02,Ghana,Uruguay,1.9167,1.8317
+2022-12-01,Costa Rica,Alemania,2.7517,1.4117
+2022-12-01,Japón,España,2.095,1.69
+2022-12-01,Croacia,Bélgica,1.7683,1.9883
+2022-12-01,Canadá,Marruecos,2.065,1.7167
+2022-11-30,Arabia Saudí,México,1.925,1.8233
+2022-11-30,Polonia,Argentina,2.3133,1.5767
+2022-11-30,Australia,Dinamarca,2.1917,1.635
+2022-11-30,Túnez,Francia,2.085,1.7017
+2022-11-29,Gales,Inglaterra,2.2283,1.615
+2022-11-29,Irán,EE. UU.,1.9533,1.7983
+2022-11-29,Países Bajos,Catar,2.0733,1.71
+2022-11-29,Ecuador,Senegal,2.0983,1.6883
+2022-11-28,Portugal,Uruguay,2.0,1.7683
+2022-11-28,Brasil,Suiza,2.1633,1.6567
+2022-11-28,Corea del Sur,Ghana,1.9933,1.77
+2022-11-28,Camerún,Serbia,1.9267,1.8217
+2022-11-27,España,Alemania,1.6183,2.2217
+2022-11-27,Croacia,Canadá,1.8783,1.88
+2022-11-27,Bélgica,Marruecos,2.015,1.7467
+2022-11-27,Japón,Costa Rica,2.1983,1.6367
+2022-11-26,Argentina,México,2.2083,1.6283
+2022-11-26,Francia,Dinamarca,1.9817,1.7767
+2022-11-26,Polonia,Arabia Saudí,2.17,1.6517
+2022-11-26,Túnez,Australia,2.01,1.7533
+2022-11-25,Inglaterra,EE. UU.,2.1667,1.655
+2022-11-25,Países Bajos,Ecuador,2.055,1.7183
+2022-11-25,Catar,Senegal,2.2183,1.6233
+2022-11-25,Gales,Irán,2.0617,1.7217
+2022-11-24,Brasil,Serbia,1.8917,1.8533
+2022-11-24,Portugal,Ghana,2.1783,1.64
+2022-11-24,Uruguay,Corea del Sur,2.0583,1.72
+2022-11-24,Suiza,Camerún,2.0783,1.705
+2022-11-23,Bélgica,Canadá,1.815,1.9333
+2022-11-23,España,Costa Rica,2.4817,1.5
+2022-11-23,Alemania,Japón,1.8,1.955
+2022-11-23,Marruecos,Croacia,1.9183,1.8317
+2022-11-22,Francia,Australia,2.3633,1.555
+2022-11-22,México,Polonia,1.9333,1.82
+2022-11-22,Dinamarca,Túnez,2.1933,1.6383
+2022-11-22,Argentina,Arabia Saudí,3.0533,1.3583
+2022-11-21,EE. UU.,Gales,1.9617,1.8017
+2022-11-21,Senegal,Países Bajos,2.19,1.6383
+2022-11-21,Inglaterra,Irán,2.7067,1.43
+2022-11-20,Catar,Ecuador,2.1,1.695
