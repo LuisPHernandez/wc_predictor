@@ -24,7 +24,8 @@ def predict_single_match(
     away_odds,
     ou_line,
     over_odds,
-    under_odds
+    under_odds,
+    alpha=0.40
 ):
     if not MODEL_CACHE_PATH.exists():
         raise FileNotFoundError(
@@ -53,7 +54,8 @@ def predict_single_match(
         away_team,
         neutral=True,
         market_total_goals=exact_implied_xg,
-        bookmaker_probs=bookmaker_probs
+        bookmaker_probs=bookmaker_probs,
+        alpha=alpha
     )
 
     # Standardize runtime execution timestamp
@@ -63,6 +65,7 @@ def predict_single_match(
     match_result = {
         "match_date": match_date,
         "prediction_timestamp": run_timestamp,
+        "alpha_used": alpha,
         "home_team": home_team,
         "away_team": away_team,
         "home_odds": home_odds,
@@ -84,7 +87,13 @@ def predict_single_match(
         "lambda_total": round(pred["lambda_home"] + pred["lambda_away"], 4),
         "home_win": round(pred["home_win"], 4),
         "draw": round(pred["draw"], 4),
-        "away_win": round(pred["away_win"], 4)
+        "away_win": round(pred["away_win"], 4),
+        "raw_model_home": round(pred["raw_model_home"], 4),
+        "raw_model_draw": round(pred["raw_model_draw"], 4),
+        "raw_model_away": round(pred["raw_model_away"], 4),
+        "raw_market_home": round(p_home, 4),
+        "raw_market_draw": round(p_draw, 4),
+        "raw_market_away": round(p_away, 4),
     }
 
     return match_result
@@ -184,6 +193,17 @@ if __name__ == "__main__":
         print(f"  -> RUNNER-UP OPTIONS     : {record['second_best_prediction']} ({record['second_best_expected_pts']} EV Pts)")
         print(f"  -> PRECISE IMPLIED XG    : {record['calculated_implied_xg']}")
         print(f"  -> DE-BIASED WIN RATIO   : H: {record['home_win']*100:.1f}% | D: {record['draw']*100:.1f}% | A: {record['away_win']*100:.1f}%\n")
+        print("\n" + "=" * 60)
+        print(f"EVALUATION: {record['home_team']} vs {record['away_team']} ({record['match_date']})")
+        print("=" * 60)
+        print(f"  -> RECOMMENDED SCORELINE : {record['prediction']} ({record['expected_pts']} EV Pts)")
+        print(f"  -> PRECISE IMPLIED XG    : {record['calculated_implied_xg']}")
+        print(f"  -> LAMBDAS (O/U Blended) : H: {record['lambda_home']} | A: {record['lambda_away']}")
+        
+        print("\n--- PROBABILITY TUG-OF-WAR ---")
+        print(f"  RAW MODEL (12yr Hist) : H: {record['raw_model_home']*100:.1f}% | D: {record['raw_model_draw']*100:.1f}% | A: {record['raw_model_away']*100:.1f}%")
+        print(f"  RAW MARKET (Vegas)    : H: {record['raw_market_home']*100:.1f}% | D: {record['raw_market_draw']*100:.1f}% | A: {record['raw_market_away']*100:.1f}%")
+        print(f"  FINAL BLEND (a=0.40)  : H: {record['home_win']*100:.1f}% | D: {record['draw']*100:.1f}% | A: {record['away_win']*100:.1f}%\n")
         
         # Safe history flushing step
         append_to_history_if_changed(record)

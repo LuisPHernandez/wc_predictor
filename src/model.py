@@ -396,43 +396,37 @@ class DixonColes:
         """
         Finds the scoreline prediction that maximizes expected points
         under the pool's scoring rules.
-
-        Returns a dict with:
-          prediction  — e.g. '2-1'
-          pred_home   — int
-          pred_away   — int
-          expected_pts — float
-          home_win    — probability home team wins
-          draw        — probability of draw
-          away_win    — probability away team wins
-          lambda_home — expected goals home
-          lambda_away — expected goals away
         """
         matrix, lh, la = self.score_matrix(
             home_team,
             away_team,
             neutral,
             max_goals,
-            market_total_goals=market_total_goals,
+            market_total_goals=market_total_goals
         )
 
+        # 1. Capture RAW Model Probabilities (Before Vegas Tilt)
+        raw_home_win = np.sum(np.tril(matrix, -1))
+        raw_draw     = np.sum(np.diag(matrix))
+        raw_away_win = np.sum(np.triu(matrix, 1))
+
+        # 2. Apply Matrix Tilt (If market odds exist)
         if bookmaker_probs is not None:
-            matrix = blend_matrix_outcomes(
-                matrix,
-                bookmaker_probs,
-                alpha
-            )
+            final_matrix = blend_matrix_outcomes(matrix, bookmaker_probs, alpha)
+        else:
+            final_matrix = matrix
 
         best_pred = (0, 0)
         best_ep   = -1.0
 
         second_pred = None
         second_ep = -1.0
-
+        
+        # 3. Calculate Expected Points using the FINAL TILTED matrix
         for ph in range(max_goals):
             for pa in range(max_goals):
                 ep = sum(
-                    points_for_prediction(ph, pa, ah, aa) * matrix[ah, aa]
+                    points_for_prediction(ph, pa, ah, aa) * final_matrix[ah, aa]
                     for ah in range(max_goals)
                     for aa in range(max_goals)
                 )
@@ -447,10 +441,10 @@ class DixonColes:
                     second_ep = ep
                     second_pred = (ph, pa)
 
-        # Match outcome probabilities
-        home_win = np.sum(np.tril(matrix, -1))  # i > j  (home scores more)
-        draw     = np.sum(np.diag(matrix))
-        away_win = np.sum(np.triu(matrix, 1))   # j > i
+        # Match outcome probabilities (Using the FINAL TILTED matrix)
+        home_win = np.sum(np.tril(final_matrix, -1))
+        draw     = np.sum(np.diag(final_matrix))
+        away_win = np.sum(np.triu(final_matrix, 1))
 
         return {
             'home_team': home_team,
@@ -459,25 +453,20 @@ class DixonColes:
             'prediction': f"{best_pred[0]}-{best_pred[1]}",
             'pred_home': best_pred[0],
             'pred_away': best_pred[1],
-
-            'second_prediction': (
-                None if second_pred is None
-                else f"{second_pred[0]}-{second_pred[1]}"
-            ),
-            'second_pred_home': (
-                None if second_pred is None else second_pred[0]
-            ),
-            'second_pred_away': (
-                None if second_pred is None else second_pred[1]
-            ),
-
+            'second_prediction': (None if second_pred is None else f"{second_pred[0]}-{second_pred[1]}"),
             'expected_pts': best_ep,
             'second_expected_pts': second_ep,
             'decision_margin': best_ep - second_ep,
 
+            # Final Blended Output
             'home_win': home_win,
             'draw': draw,
             'away_win': away_win,
+            
+            # Diagnostic Raw Data
+            'raw_model_home': raw_home_win,
+            'raw_model_draw': raw_draw,
+            'raw_model_away': raw_away_win,
             'lambda_home': lh,
             'lambda_away': la,
         }

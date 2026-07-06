@@ -341,6 +341,17 @@ for row in matches.itertuples():
                 pred["away_win"],
                 4,
             ),
+
+        # --------------------------------------
+        # Diagnostic Raw Data
+        # --------------------------------------
+        "raw_model_home": round(pred["raw_model_home"], 4),
+        "raw_model_draw": round(pred["raw_model_draw"], 4),
+        "raw_model_away": round(pred["raw_model_away"], 4),
+        "raw_market_home": round(p_home, 4),
+        "raw_market_draw": round(p_draw, 4),
+        "raw_market_away": round(p_away, 4),
+        "alpha_used": 0.40,
     })
 
 # ============================================================
