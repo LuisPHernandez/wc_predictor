@@ -302,42 +302,54 @@ class DixonColes:
     # Prediction
     # ------------------------------------------------------------------
 
-    def score_matrix(self, home_team, away_team, neutral=True, max_goals=8, market_total_goals=None):
+    def score_matrix(
+        self, 
+        home_team, 
+        away_team, 
+        neutral=True, 
+        max_goals=8, 
+        market_total_goals=None,
+        market_home_lambda=None,  # <-- NEW
+        market_away_lambda=None,  # <-- NEW
+        alpha=PRODUCTION_ALPHA    # <-- NEW
+    ):
         """
         Returns a (max_goals x max_goals) matrix where entry [i,j]
         is the probability of home_team scoring i, away_team scoring j.
-
-        Also returns the expected goals (lh, la) for reference.
         """
         self._check_fitted()
-
-        # Handle teams not seen during training
         home_team = self._resolve_team(home_team)
         away_team = self._resolve_team(away_team)
 
-        lh, la = self._get_lambda(
-            home_team,
-            away_team,
-            neutral,
-        )
+        # ========================================================
+        # 🚀 DUAL ENGINE HYBRID ARCHITECTURE 🚀
+        # ========================================================
+        
+        if alpha <= 0.20 and market_home_lambda is not None and market_away_lambda is not None:
+            # PATH B: OVERRIDE ENGINE (Pure Vegas Math)
+            # Bypass historical Dixon-Coles and goal blending entirely.
+            lh = market_home_lambda
+            la = market_away_lambda
+            
+        else:
+            # PATH A: STANDARD ENGINE (Dixon-Coles + Beta Blend)
+            lh, la = self._get_lambda(home_team, away_team, neutral)
+            model_total = lh + la
 
-        model_total = lh + la
+            if market_total_goals is not None:
+                blend_total = (
+                    self.goal_blend_beta * model_total
+                    +
+                    (1 - self.goal_blend_beta)
+                    * market_total_goals
+                )
+                home_ratio = lh / model_total
+                away_ratio = la / model_total
 
-        if market_total_goals is not None:
+                lh = blend_total * home_ratio
+                la = blend_total * away_ratio
 
-            blend_total = (
-                self.goal_blend_beta * model_total
-                +
-                (1 - self.goal_blend_beta)
-                * market_total_goals
-            )
-
-            home_ratio = lh / model_total
-            away_ratio = la / model_total
-
-            lh = blend_total * home_ratio
-            la = blend_total * away_ratio
-
+        # --- Base engine resumes identical execution below ---
         total = lh + la
 
         LOW_K = PRODUCTION_K_LOW
@@ -390,19 +402,23 @@ class DixonColes:
         neutral=True,
         max_goals=8,
         market_total_goals=None,
+        market_home_lambda=None,
+        market_away_lambda=None,
         bookmaker_probs=None,
         alpha=PRODUCTION_ALPHA
     ):
         """
-        Finds the scoreline prediction that maximizes expected points
-        under the pool's scoring rules.
+        Finds the scoreline prediction that maximizes expected points.
         """
         matrix, lh, la = self.score_matrix(
             home_team,
             away_team,
             neutral,
             max_goals,
-            market_total_goals=market_total_goals
+            market_total_goals=market_total_goals,
+            market_home_lambda=market_home_lambda,  # <-- NEW
+            market_away_lambda=market_away_lambda,  # <-- NEW
+            alpha=alpha                             # <-- NEW
         )
 
         # 1. Capture RAW Model Probabilities (Before Vegas Tilt)

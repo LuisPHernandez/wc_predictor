@@ -1,7 +1,7 @@
 import pandas as pd
 
 df = pd.read_csv(
-    "oracle_matches.csv"
+    "research/alpha/oracle_matches.csv"
 )
 
 # ------------------------------------------

@@ -25,7 +25,13 @@ def predict_single_match(
     ou_line,
     over_odds,
     under_odds,
-    alpha=0.40
+    alpha=0.40,
+    home_ou_line=None,
+    home_over_odds=None,
+    home_under_odds=None, 
+    away_ou_line=None,
+    away_over_odds=None,
+    away_under_odds=None
 ):
     if not MODEL_CACHE_PATH.exists():
         raise FileNotFoundError(
@@ -48,12 +54,24 @@ def predict_single_match(
         under_odds=under_odds
     )
 
+    # 3b. Calculate explicitly requested Team Totals (for Override Engine)
+    market_home_lambda = None
+    market_away_lambda = None
+    
+    if all(v is not None for v in [home_ou_line, home_over_odds, home_under_odds]):
+        market_home_lambda = implied_expected_goals(home_ou_line, home_over_odds, home_under_odds)
+        
+    if all(v is not None for v in [away_ou_line, away_over_odds, away_under_odds]):
+        market_away_lambda = implied_expected_goals(away_ou_line, away_over_odds, away_under_odds)
+
     # 4. Generate predictions with optimized calibration parameters
     pred = model.predict(
         home_team,
         away_team,
         neutral=True,
         market_total_goals=exact_implied_xg,
+        market_home_lambda=market_home_lambda,
+        market_away_lambda=market_away_lambda,
         bookmaker_probs=bookmaker_probs,
         alpha=alpha
     )

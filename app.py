@@ -85,8 +85,23 @@ with st.form("prediction_form"):
 
     override_alpha = st.checkbox("⚠️ Enable Market Override (Model Blind Spot)", value=False)
     alpha_val = 0.10 if override_alpha else 0.40
-
     st.caption(f"Current Alpha in use: **{alpha_val}**")
+
+    # Team Totals Inputs (Required if Override is checked)
+    with st.expander("Vegas Team Totals (Required for Override)", expanded=override_alpha):
+        st.caption("When alpha drops to 0.10, the engine ignores 12-year history and builds the match shape purely from these lines.")
+        
+        col_th, col_ta = st.columns(2)
+        with col_th:
+            st.markdown("**Home Team O/U**")
+            home_ou_line = st.selectbox("Home Line", [0.5, 1.0, 1.5, 2.0, 2.5, 3.0], index=2)
+            home_over_odds = st.number_input("Home Over Odds", min_value=1.01, value=None, format="%.4f")
+            home_under_odds = st.number_input("Home Under Odds", min_value=1.01, value=None, format="%.4f")
+        with col_ta:
+            st.markdown("**Away Team O/U**")
+            away_ou_line = st.selectbox("Away Line", [0.5, 1.0, 1.5, 2.0, 2.5, 3.0], index=2)
+            away_over_odds = st.number_input("Away Over Odds", min_value=1.01, value=None, format="%.4f")
+            away_under_odds = st.number_input("Away Under Odds", min_value=1.01, value=None, format="%.4f")
     
     submit_button = st.form_submit_button(label="Compute Optimal Scoreline", use_container_width=True)
 
@@ -95,7 +110,9 @@ with st.form("prediction_form"):
 # ============================================================
 if submit_button:
     if None in [home_odds, draw_odds, away_odds, over_odds, under_odds] or home_team == "" or away_team == "":
-        st.error("⚠️ All team names and market odds fields must be filled out before computing!")
+        st.error("⚠️ All team names and match O/U fields must be filled out before computing!")
+    elif override_alpha and None in [home_over_odds, home_under_odds, away_over_odds, away_under_odds]:
+        st.error("⚠️ You checked the Override Box! You must fill out the Vegas Team Totals in the expander above.")
     else:
         try:
             # Run calculation using pre-compiled model state
@@ -109,7 +126,13 @@ if submit_button:
                 ou_line=float(ou_line),
                 over_odds=float(over_odds),
                 under_odds=float(under_odds),
-                alpha=alpha_val
+                alpha=alpha_val,
+                home_ou_line=float(home_ou_line) if home_ou_line else None,
+                home_over_odds=float(home_over_odds) if home_over_odds else None,
+                home_under_odds=float(home_under_odds) if home_under_odds else None,
+                away_ou_line=float(away_ou_line) if away_ou_line else None,
+                away_over_odds=float(away_over_odds) if away_over_odds else None,
+                away_under_odds=float(away_under_odds) if away_under_odds else None
             )
             
             # Display Core Strategy Cards

@@ -1,6 +1,7 @@
 import pandas as pd
+from pathlib import Path
 
-CSV_PATH = "continental_analysis.csv"
+CSV_PATH = Path(__file__).parent / "../../data/analysis/continental_analysis.csv"
 
 df = pd.read_csv(CSV_PATH)
 
